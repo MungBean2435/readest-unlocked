@@ -1,0 +1,856 @@
+From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Sun, 1 Nov 2026 13:16:32 +0800
+Subject: [PATCH] feat(tts): queue native TTS sentences ahead of playback
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Direct-speak submits one sentence and waits for its `end` event before
+submitting the next, so every sentence pays the engine's start latency as
+silence — plus, on iOS, a 100 ms pre-utterance delay on every sentence.
+Both engines already queue: Android has QUEUE_ADD (only reachable through
+the preload path, which playback never used) and AVSpeechSynthesizer
+appends natively.
+
+Keep a small window of sentences submitted ahead, route events by
+utterance id, and yield them in reading order; the first sentence of a run
+still flushes so a seek cannot leave stale audio behind. A mark is
+dispatched when its sentence becomes audible, not when it is queued, and
+the per-sentence setVoice call is skipped while the voice is unchanged.
+
+The window deepens while the page is hidden: the webview's timers are
+throttled there, so a shallow queue would drain and stop at the next
+sentence boundary.
+
+Sentence-level latency (start delay, audible gap, dispatch overhead) is
+recorded for the M0 measurements, behind `tts-latency-metrics` in
+localStorage and readable through `globalThis.ttsLatencyReport()`.
+---
+ .../android/src/main/java/NativeTTSPlugin.kt  |  30 +-
+ .../ios/Sources/NativeTTSPlugin.swift         |  20 +-
+ .../tauri-plugin-native-tts/src/models.rs     |   6 +
+ .../services/native-tts-queue.test.ts         | 159 ++++++++++
+ .../__tests__/services/tts-metrics.test.ts    |  48 +++
+ .../src/services/tts/NativeTTSClient.ts       | 283 ++++++++++++------
+ .../src/services/tts/ttsMetrics.ts            | 108 +++++++
+ 7 files changed, 546 insertions(+), 108 deletions(-)
+ create mode 100644 apps/readest-app/src/__tests__/services/native-tts-queue.test.ts
+ create mode 100644 apps/readest-app/src/__tests__/services/tts-metrics.test.ts
+ create mode 100644 apps/readest-app/src/services/tts/ttsMetrics.ts
+
+diff --git a/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/android/src/main/java/NativeTTSPlugin.kt b/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/android/src/main/java/NativeTTSPlugin.kt
+index 6a46d8e..0d57e61 100644
+--- a/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/android/src/main/java/NativeTTSPlugin.kt
++++ b/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/android/src/main/java/NativeTTSPlugin.kt
+@@ -68,7 +68,11 @@ data class TTSMessageEvent(
+ @InvokeArg
+ class SpeakArgs(
+     val text: String? = "",
+-    val preload: Boolean? = false
++    val preload: Boolean? = false,
++    // "flush" cuts whatever the engine is playing, "queue" appends. The client
++    // sends "flush" for a run's first sentence and "queue" for the rest, so the
++    // engine plays them back to back instead of each paying start latency.
++    val mode: String? = null
+ )
+ 
+ @InvokeArg
+@@ -312,7 +316,7 @@ class NativeTTSPlugin(private val activity: Activity) : Plugin(activity) {
+                 eventChannels[utteranceId] = eventChannel
+ 
+                 val speakJob = launch {
+-                    speakText(text, utteranceId, args.preload ?: false)
++                    speakText(text, utteranceId, args.preload ?: false, args.mode)
+                 }
+                 speakingJobs[utteranceId] = speakJob
+ 
+@@ -331,7 +335,12 @@ class NativeTTSPlugin(private val activity: Activity) : Plugin(activity) {
+         }
+     }
+     
+-    private suspend fun speakText(text: String, utteranceId: String, preload: Boolean) {
++    private suspend fun speakText(
++        text: String,
++        utteranceId: String,
++        preload: Boolean,
++        mode: String? = null
++    ) {
+         withContext(Dispatchers.Main) {
+             try {
+                 textToSpeech?.apply {
+@@ -343,12 +352,15 @@ class NativeTTSPlugin(private val activity: Activity) : Plugin(activity) {
+                     putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+                 }
+                 
+-                val result = textToSpeech?.speak(
+-                    text,
+-                    if (preload) TextToSpeech.QUEUE_ADD else TextToSpeech.QUEUE_FLUSH,
+-                    params,
+-                    utteranceId
+-                )
++                // Queueing keeps the sentence behind the one being spoken, so
++                // the engine's start latency hides inside it instead of
++                // becoming a silence between sentences.
++                val queueMode = if (mode == "queue" || preload) {
++                    TextToSpeech.QUEUE_ADD
++                } else {
++                    TextToSpeech.QUEUE_FLUSH
++                }
++                val result = textToSpeech?.speak(text, queueMode, params, utteranceId)
+                 
+                 if (result != TextToSpeech.SUCCESS) {
+                     sendEvent(utteranceId, TTSMessageEvent("error", "Failed to start speech"))
+diff --git a/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/ios/Sources/NativeTTSPlugin.swift b/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/ios/Sources/NativeTTSPlugin.swift
+index d71c202..716627b 100644
+--- a/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/ios/Sources/NativeTTSPlugin.swift
++++ b/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/ios/Sources/NativeTTSPlugin.swift
+@@ -13,6 +13,10 @@ private let keepAliveLog = Logger(subsystem: "com.bilingify.readest", category:
+ class SpeakArgs: Decodable {
+   let text: String?
+   let preload: Bool?
++  // "flush" stops whatever is playing first, "queue" appends. AVSpeechSynthesizer
++  // already plays queued utterances back to back, so queueing is what keeps the
++  // gap between sentences down to the engine's own.
++  let mode: String?
+ }
+ 
+ class SetRateArgs: Decodable {
+@@ -347,18 +351,26 @@ class NativeTTSPlugin: Plugin, AVSpeechSynthesizerDelegate {
+       let rate = currentRate
+       let pitch = currentPitch
+       let voiceId = currentVoiceId
++      let mode = args.mode
+ 
+       // Resolve immediately with the id; events stream over `tts_events`.
+       invoke.resolve(SpeakResponse(utteranceId: utteranceId))
+ 
+       DispatchQueue.main.async {
++        if mode == "flush" {
++          // First sentence of a run: drop anything stale left by a seek or a
++          // stop that lost the race, so the run starts from here.
++          self.synthesizer.stopSpeaking(at: .immediate)
++          self.utteranceIds.removeAll()
++        }
+         let utterance = AVSpeechUtterance(string: text)
+         utterance.rate = self.avRate(from: rate)
+         utterance.pitchMultiplier = self.avPitch(from: pitch)
+-        // Each sentence is a separate utterance spoken after a gap, so the audio
+-        // route goes cold between them and the first word can be clipped. A small
+-        // pre-utterance delay plays silence first to warm the route. See #4676.
+-        utterance.preUtteranceDelay = 0.1
++        // Each sentence is a separate utterance, so the audio route goes cold
++        // between them and the first word can be clipped. The delay only helps
++        // at the start of a run: inside a queue it IS the gap between
++        // sentences, so queued utterances get none. See #4676.
++        utterance.preUtteranceDelay = mode == "flush" ? 0.1 : 0
+         if !voiceId.isEmpty, let voice = AVSpeechSynthesisVoice(identifier: voiceId) {
+           utterance.voice = voice
+         }
+diff --git a/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/src/models.rs b/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/src/models.rs
+index 811872f..16c4a78 100644
+--- a/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/src/models.rs
++++ b/apps/readest-app/src-tauri/plugins/tauri-plugin-native-tts/src/models.rs
+@@ -30,6 +30,12 @@ pub struct SpeakArgs {
+     pub text: String,
+     #[serde(default)]
+     pub preload: bool,
++    // How the engine's play queue is treated: "flush" cuts whatever it is
++    // playing (the first sentence of a run drops stale audio left by a seek or
++    // a lost stop), "queue" appends, so consecutive sentences play back to
++    // back instead of each paying the engine's start latency.
++    #[serde(default)]
++    pub mode: Option<String>,
+ }
+ 
+ #[derive(Debug, Serialize, Deserialize)]
+diff --git a/apps/readest-app/src/__tests__/services/native-tts-queue.test.ts b/apps/readest-app/src/__tests__/services/native-tts-queue.test.ts
+new file mode 100644
+index 0000000..cc2c4dc
+--- /dev/null
++++ b/apps/readest-app/src/__tests__/services/native-tts-queue.test.ts
+@@ -0,0 +1,159 @@
++import { describe, test, expect, vi, beforeEach } from 'vitest';
++
++type EventHandler = (event: unknown) => void;
++let emit: EventHandler | null = null;
++
++vi.mock('@tauri-apps/api/core', () => ({
++  invoke: vi.fn(),
++  addPluginListener: vi.fn(async (_plugin: string, _event: string, handler: EventHandler) => {
++    emit = handler;
++    return { unregister: vi.fn() };
++  }),
++}));
++
++// Avoid pulling in the heavy TTSController module graph (foliate-js, etc.) — the
++// native client only uses it to dispatch marks.
++vi.mock('@/services/tts/TTSController', () => ({ TTSController: class {} }));
++
++import { NativeTTSClient } from '@/services/tts/NativeTTSClient';
++import { invoke } from '@tauri-apps/api/core';
++
++const SSML = `<speak xml:lang="en"><mark name="m1"/>First sentence. <mark name="m2"/>Second sentence. <mark name="m3"/>Third sentence. <mark name="m4"/>Fourth sentence.</speak>`;
++
++interface SpeakPayload {
++  text: string;
++  preload: boolean;
++  mode: string;
++}
++
++const speakPayloads: SpeakPayload[] = [];
++let utteranceSeq = 0;
++
++const tick = async (rounds = 20) => {
++  for (let i = 0; i < rounds; i++) await new Promise((resolve) => setTimeout(resolve, 0));
++};
++
++const startSpeaking = (client: NativeTTSClient, ssml = SSML) => {
++  const controller = new AbortController();
++  const events: { code: string; mark?: string }[] = [];
++  const done = (async () => {
++    for await (const event of client.speak(ssml, controller.signal)) {
++      events.push(event);
++    }
++  })();
++  return { controller, events, done };
++};
++
++const fire = (utteranceId: string, code: string, message?: string) => {
++  emit?.({ utteranceId, code, message });
++};
++
++const createClient = async (ttsController?: unknown) => {
++  const client = new NativeTTSClient(ttsController as never);
++  client.setPrimaryLang('en');
++  await client.init();
++  return client;
++};
++
++beforeEach(() => {
++  vi.clearAllMocks();
++  emit = null;
++  speakPayloads.length = 0;
++  utteranceSeq = 0;
++  vi.mocked(invoke).mockImplementation(async (cmd: string, args?: unknown) => {
++    if (cmd === 'plugin:native-tts|init') return { success: true };
++    if (cmd === 'plugin:native-tts|get_all_voices') {
++      return { voices: [{ id: 'voice-1', name: 'Voice 1', lang: 'en-US' }] };
++    }
++    if (cmd === 'plugin:native-tts|speak') {
++      speakPayloads.push((args as { payload: SpeakPayload }).payload);
++      return { utteranceId: `u${++utteranceSeq}` };
++    }
++    return undefined;
++  });
++});
++
++describe('NativeTTSClient queued playout', () => {
++  test('submits sentences into the engine queue before the first one finishes', async () => {
++    const client = await createClient();
++    startSpeaking(client);
++    await tick();
++
++    // Three sentences in hand, and only the first one flushes.
++    expect(speakPayloads.map((payload) => payload.mode)).toEqual(['flush', 'queue', 'queue']);
++    expect(speakPayloads.map((payload) => payload.text.trim())).toEqual([
++      'First sentence.',
++      'Second sentence.',
++      'Third sentence.',
++    ]);
++  });
++
++  test('dispatches a mark when its audio starts, not when it is queued', async () => {
++    const dispatchSpeakMark = vi.fn();
++    const client = await createClient({ dispatchSpeakMark });
++    startSpeaking(client);
++    await tick();
++
++    // Queued ahead, but nothing audible yet.
++    expect(speakPayloads).toHaveLength(3);
++    expect(dispatchSpeakMark).not.toHaveBeenCalled();
++
++    fire('u1', 'boundary', 'start');
++    expect(dispatchSpeakMark).toHaveBeenCalledTimes(1);
++    expect(dispatchSpeakMark.mock.calls[0]![0]).toMatchObject({ name: 'm1' });
++
++    fire('u1', 'end');
++    await tick();
++    fire('u2', 'boundary', 'start');
++    expect(dispatchSpeakMark).toHaveBeenCalledTimes(2);
++    expect(dispatchSpeakMark.mock.calls[1]![0]).toMatchObject({ name: 'm2' });
++  });
++
++  test('yields events in reading order even when a later sentence finishes first', async () => {
++    const client = await createClient();
++    const { controller, events, done } = startSpeaking(client);
++    await tick();
++
++    // The engine can report the second sentence before the first one is done.
++    fire('u2', 'end');
++    fire('u1', 'boundary', 'start');
++    fire('u1', 'end');
++    await tick();
++
++    expect(events.map((event) => `${event.code}:${event.mark}`)).toEqual([
++      'boundary:m1',
++      'end:m1',
++      'end:m2',
++    ]);
++
++    controller.abort();
++    await done;
++  });
++
++  test('tops the queue up as sentences finish and ends after the last one', async () => {
++    const client = await createClient();
++    const { events, done } = startSpeaking(client);
++    await tick();
++
++    for (let index = 1; index <= 4; index++) {
++      fire(`u${index}`, 'boundary', 'start');
++      fire(`u${index}`, 'end');
++      await tick();
++    }
++
++    await done;
++    expect(speakPayloads).toHaveLength(4);
++    expect(events.filter((event) => event.code === 'end')).toHaveLength(4);
++  });
++
++  test('stops without waiting when the signal is aborted', async () => {
++    const client = await createClient();
++    const { controller, events, done } = startSpeaking(client);
++    await tick();
++
++    controller.abort();
++    await done;
++
++    expect(events.at(-1)?.code).toBe('error');
++  });
++});
+diff --git a/apps/readest-app/src/__tests__/services/tts-metrics.test.ts b/apps/readest-app/src/__tests__/services/tts-metrics.test.ts
+new file mode 100644
+index 0000000..5451b63
+--- /dev/null
++++ b/apps/readest-app/src/__tests__/services/tts-metrics.test.ts
+@@ -0,0 +1,48 @@
++import { beforeEach, describe, expect, test } from 'vitest';
++
++import {
++  noteSentenceEnded,
++  noteSentenceStarted,
++  resetTTSLatency,
++  ttsLatencyReport,
++} from '@/services/tts/ttsMetrics';
++
++describe('ttsLatencyReport', () => {
++  beforeEach(() => {
++    resetTTSLatency();
++  });
++
++  test('reports the submit-to-start delay and the audible gap between sentences', () => {
++    // Sentence 1 submitted at 0, audible at 200: 200 ms of start latency.
++    noteSentenceStarted(0, 200);
++    noteSentenceEnded(1000);
++    // Sentence 2 submitted at 1010, audible at 1150: the gap is 150 ms.
++    noteSentenceStarted(1010, 1150);
++    noteSentenceEnded(2000);
++    noteSentenceStarted(2010, 2200);
++
++    const report = ttsLatencyReport();
++    expect(report.sentences).toBe(3);
++    expect(report.startDelayMs.p50).toBeGreaterThan(0);
++    expect(report.gapMs.max).toBe(200);
++    expect(report.dispatchMs.max).toBe(10);
++  });
++
++  test('ignores pauses longer than the cadence window', () => {
++    noteSentenceStarted(0, 100);
++    noteSentenceEnded(1000);
++    // A 30 s pause (user hit pause, or a chapter break) is not a sentence gap.
++    noteSentenceStarted(30000, 30100);
++
++    expect(ttsLatencyReport().gapMs.max).toBe(0);
++  });
++
++  test('keeps samples from before a reset out of the report', () => {
++    noteSentenceStarted(0, 500);
++    noteSentenceEnded(1000);
++    expect(ttsLatencyReport().sentences).toBe(1);
++
++    resetTTSLatency();
++    expect(ttsLatencyReport().sentences).toBe(0);
++  });
++});
+diff --git a/apps/readest-app/src/services/tts/NativeTTSClient.ts b/apps/readest-app/src/services/tts/NativeTTSClient.ts
+index d80d7ab..f77ed70 100644
+--- a/apps/readest-app/src/services/tts/NativeTTSClient.ts
++++ b/apps/readest-app/src/services/tts/NativeTTSClient.ts
+@@ -8,6 +8,7 @@ import { TTSCapabilities, TTSClient, TTSMessageEvent } from './TTSClient';
+ import { TTSGranularity, TTSMark, TTSVoice, TTSVoicesGroup } from './types';
+ import { TTSUtils } from './TTSUtils';
+ import { TTSController } from './TTSController';
++import { noteSentenceEnded, noteSentenceStarted } from './ttsMetrics';
+ 
+ type TTSEventPayload = {
+   utteranceId: string;
+@@ -36,6 +37,31 @@ const TTSEngines = {
+   aispeech: 'Aispeech',
+ } as Record<string, string>;
+ 
++// Sentences kept submitted to the engine ahead of the one being heard. The
++// engine plays its own queue back to back, and everything the JS side used to
++// do between two sentences (invoke round trip, engine start, event hop) then
++// hides inside the previous sentence instead of becoming silence.
++//
++// 1 is the old behaviour: submit a sentence, wait for its 'end', submit the
++// next — every sentence pays the full start latency.
++const QUEUE_DEPTH = 3;
++
++// A hidden page's timers are throttled and eventually frozen. Waiting for a
++// top-up that may never run before the queue drains would stop playback at the
++// first sentence boundary after the screen goes off, so keep the paragraph (and
++// whatever follows it) queued while hidden.
++const QUEUE_DEPTH_HIDDEN = 16;
++
++const isPageHidden = () => typeof document !== 'undefined' && document.visibilityState === 'hidden';
++
++interface QueuedUtterance {
++  mark: TTSMark;
++  events: TTSMessageEvent[];
++  submittedAt: number;
++  started: boolean;
++  finished: boolean;
++}
++
+ export class NativeTTSClient implements TTSClient {
+   name = 'native-tts';
+   initialized = false;
+@@ -49,14 +75,14 @@ export class NativeTTSClient implements TTSClient {
+   #pitch = 1.0;
+ 
+   #eventListener: PluginListener | null = null;
+-  #activeUtterances = new Map<
+-    string,
+-    {
+-      eventQueue: TTSMessageEvent[];
+-      resolver: ((value: IteratorResult<TTSMessageEvent>) => void) | null;
+-      finished: boolean;
+-    }
+-  >();
++  // Utterances handed to the engine and not yet taken off the play queue: the
++  // event handler appends to their buffers, the speak generator consumes them
++  // in reading order.
++  #utterances = new Map<string, QueuedUtterance>();
++  #wake: (() => void) | null = null;
++  // Bumped per speak(): a generator from an older session stops at its next
++  // step instead of consuming the new session's events.
++  #speakSession = 0;
+ 
+   constructor(controller?: TTSController) {
+     this.controller = controller;
+@@ -71,20 +97,23 @@ export class NativeTTSClient implements TTSClient {
+         (event) => {
+           const { utteranceId, code, message, mark } = event;
+ 
+-          const utteranceData = this.#activeUtterances.get(utteranceId);
+-          if (!utteranceData) return;
+-
+-          const ttsEvent: TTSMessageEvent = { code, message, mark };
+-          utteranceData.eventQueue.push(ttsEvent);
+-          if (code === 'end' || code === 'error') {
+-            utteranceData.finished = true;
+-            if (utteranceData.resolver) {
+-              utteranceData.resolver({ value: undefined, done: true });
+-            }
+-          } else if (utteranceData.resolver) {
+-            utteranceData.resolver({ value: ttsEvent, done: false });
+-            utteranceData.resolver = null;
++          const utterance = this.#utterances.get(utteranceId);
++          if (!utterance) return;
++
++          // The sentence became audible: highlight it now, not when it was
++          // queued (the window is submitted sentences ahead of the voice).
++          // Any boundary counts: some engines report only range events.
++          if (code === 'boundary' && !utterance.started) {
++            utterance.started = true;
++            noteSentenceStarted(utterance.submittedAt, Date.now());
++            this.controller?.dispatchSpeakMark(utterance.mark);
++          } else if (code === 'end' || code === 'error') {
++            utterance.finished = true;
++            noteSentenceEnded();
+           }
++
++          utterance.events.push({ code, message, mark });
++          this.#notify();
+         },
+       );
+     } catch (error) {
+@@ -92,6 +121,16 @@ export class NativeTTSClient implements TTSClient {
+     }
+   }
+ 
++  #notify(): void {
++    const wake = this.#wake;
++    this.#wake = null;
++    wake?.();
++  }
++
++  #queueDepth(): number {
++    return isPageHidden() ? QUEUE_DEPTH_HIDDEN : QUEUE_DEPTH;
++  }
++
+   async init(): Promise<boolean> {
+     const result = await invoke<{ success: boolean }>('plugin:native-tts|init');
+     this.initialized = result.success;
+@@ -101,96 +140,147 @@ export class NativeTTSClient implements TTSClient {
+     return this.initialized;
+   }
+ 
+-  async *speakMark(mark: TTSMark, preload: boolean, signal: AbortSignal) {
+-    if (preload) {
+-      yield { code: 'end', message: 'Dummy preload finished' } as TTSMessageEvent;
+-      return;
++  // Hand one sentence to the engine. The first sentence of a run flushes (it
++  // drops anything stale a seek or a lost stop left behind); the rest queue, so
++  // the engine plays them back to back.
++  async #submit(mark: TTSMark, first: boolean, session: number): Promise<string> {
++    const voiceId = await this.getVoiceIdFromLang(mark.language);
++    // Setting the voice costs a native round trip and an engine call: skip it
++    // while the voice is unchanged, which is every sentence but a switch.
++    if (voiceId && voiceId !== this.#currentVoiceId) {
++      await this.setVoice(voiceId);
+     }
+-    const { language: voiceLang } = mark;
+-    const voiceId = await this.getVoiceIdFromLang(voiceLang);
+-    this.#currentVoiceId = voiceId;
+-    this.#speakingLang = voiceLang;
+-    await this.setVoice(voiceId);
++    if (session !== this.#speakSession) throw new Error('superseded');
++
++    this.#speakingLang = mark.language;
++    const submittedAt = Date.now();
++    const { utteranceId } = await invoke<{ utteranceId: string }>('plugin:native-tts|speak', {
++      payload: {
++        text: mark.text,
++        preload: false,
++        mode: first ? 'flush' : 'queue',
++      },
++    });
++    this.#utterances.set(utteranceId, {
++      mark,
++      events: [],
++      submittedAt,
++      started: false,
++      finished: false,
++    });
++    return utteranceId;
++  }
++
++  // Speak a list of marks through the engine's play queue, yielding their
++  // events in reading order.
++  async *#speakQueued(marks: TTSMark[], signal: AbortSignal): AsyncGenerator<TTSMessageEvent> {
++    if (marks.length === 0) return;
++
++    const session = ++this.#speakSession;
++    const order: string[] = [];
++    let next = 0;
++    let aborted = signal.aborted;
++
++    const onAbort = () => {
++      aborted = true;
++      this.#notify();
++    };
++    signal.addEventListener('abort', onAbort, { once: true });
++
+     try {
+-      const result = await invoke<{ utteranceId: string }>('plugin:native-tts|speak', {
+-        payload: { text: mark.text, preload },
+-      });
++      for (;;) {
++        // Top up: keep the queue between one and QUEUE_DEPTH sentences ahead
++        // of the sentence being heard.
++        while (!aborted && session === this.#speakSession && next < marks.length) {
++          if (order.length >= this.#queueDepth()) break;
++          const mark = marks[next]!;
++          try {
++            const utteranceId = await this.#submit(mark, next === 0, session);
++            order.push(utteranceId);
++          } catch (error) {
++            // A newer session took over: nothing to report, it is not a fault.
++            if (session !== this.#speakSession) return;
++            // The engine refused this sentence: skip it and keep the queue
++            // moving rather than stranding playback on one bad line.
++            console.warn('Native TTS failed to submit:', mark.text, error);
++            yield { code: 'error', message: String(error) } as TTSMessageEvent;
++          }
++          next += 1;
++        }
+ 
+-      const utteranceId = result.utteranceId;
+-      this.#activeUtterances.set(utteranceId, {
+-        eventQueue: [],
+-        resolver: null,
+-        finished: false,
+-      });
++        if (aborted) {
++          yield { code: 'error', message: 'Aborted' } as TTSMessageEvent;
++          return;
++        }
++        if (session !== this.#speakSession) return;
++
++        const headId = order[0];
++        if (!headId) return;
+ 
+-      const abortHandler = () => {
+-        const utteranceData = this.#activeUtterances.get(utteranceId);
+-        if (utteranceData && utteranceData.resolver) {
+-          const error = { code: 'error', message: 'Aborted' } as TTSMessageEvent;
+-          utteranceData.resolver({ value: error, done: true });
+-          utteranceData.resolver = null;
++        const head = this.#utterances.get(headId);
++        // Cleared by stop(): this session is over, not waiting for an event
++        // that will never arrive.
++        if (!head) {
++          order.shift();
++          continue;
+         }
+-        this.stop();
+-      };
+-
+-      signal.addEventListener('abort', abortHandler);
+-
+-      try {
+-        while (true) {
+-          const utteranceData = this.#activeUtterances.get(utteranceId);
+-          if (!utteranceData) break;
+-
+-          if (utteranceData.eventQueue.length > 0) {
+-            const event = utteranceData.eventQueue.shift()!;
+-            event.mark = mark.name;
+-            yield event;
+-
+-            if (event.code === 'end' || event.code === 'error') {
+-              break;
+-            }
+-          } else if (utteranceData.finished) {
+-            break;
+-          } else {
+-            const eventPromise = new Promise<TTSMessageEvent | void>((resolve) => {
+-              const utteranceData = this.#activeUtterances.get(utteranceId);
+-              if (!utteranceData) return resolve();
+-              utteranceData.resolver = (res) =>
+-                resolve(res.value?.code === 'error' ? res.value : undefined);
+-            });
+-            const timeoutPromise = new Promise<null>((resolve) =>
+-              setTimeout(() => resolve(null), 100),
+-            );
+-            const result = await Promise.race([eventPromise, timeoutPromise]);
+-            if (result) yield result;
++
++        const event = head.events.shift();
++        if (event) {
++          const markName = head.mark.name;
++          yield { ...event, mark: markName } as TTSMessageEvent;
++          if (event.code === 'end' || event.code === 'error') {
++            order.shift();
++            this.#utterances.delete(headId);
+           }
++          continue;
++        }
++        if (head.finished) {
++          order.shift();
++          this.#utterances.delete(headId);
++          continue;
++        }
+ 
+-          if (signal.aborted) {
+-            break;
++        await new Promise<void>((resolve) => {
++          this.#wake = resolve;
++          // An event may have landed between the checks above and here.
++          if (head.events.length > 0 || head.finished || aborted) {
++            this.#wake = null;
++            resolve();
+           }
++        });
++        if (aborted) {
++          yield { code: 'error', message: 'Aborted' } as TTSMessageEvent;
++          return;
+         }
+-      } finally {
+-        signal.removeEventListener('abort', abortHandler);
+-        this.#activeUtterances.delete(utteranceId);
++        if (session !== this.#speakSession) return;
+       }
+-    } catch (error) {
+-      console.error('Failed to speak:', error);
+-      throw error;
++    } finally {
++      signal.removeEventListener('abort', onAbort);
++      for (const utteranceId of order) this.#utterances.delete(utteranceId);
++    }
++  }
++
++  async *speakMark(mark: TTSMark, preload: boolean, signal: AbortSignal) {
++    if (preload) {
++      yield { code: 'end', message: 'Dummy preload finished' } as TTSMessageEvent;
++      return;
+     }
++    yield* this.#speakQueued([mark], signal);
+   }
+ 
+   async *speak(ssml: string, signal: AbortSignal, preload: boolean = false) {
+     const { marks } = parseSSMLMarks(ssml, this.#primaryLang);
+ 
+-    for (const mark of marks) {
+-      if (!preload) this.controller?.dispatchSpeakMark(mark);
+-      for await (const ev of this.speakMark(mark, preload, signal)) {
+-        if (signal.aborted) {
+-          yield { code: 'error', message: 'Aborted' } as TTSMessageEvent;
+-          return;
+-        }
+-        yield ev;
+-      }
++    // The engine has no "synthesize without playing" call, so a preload would
++    // be a sentence spoken out of order. Report it as finished: the controller
++    // only uses preloads as a hint that audio is coming.
++    if (preload) {
++      yield { code: 'end', message: 'Dummy preload finished' } as TTSMessageEvent;
++      return;
+     }
++
++    yield* this.#speakQueued(marks, signal);
+   }
+ 
+   async getVoiceIdFromLang(lang: string) {
+@@ -225,7 +315,10 @@ export class NativeTTSClient implements TTSClient {
+     } catch (error) {
+       console.warn('Native TTS stop failed:', error);
+     }
+-    this.#activeUtterances.clear();
++    // The engine dropped its queue: forget the utterances with it and wake a
++    // generator parked on an event that will never arrive.
++    this.#utterances.clear();
++    this.#notify();
+   }
+ 
+   async setRate(rate: number) {
+diff --git a/apps/readest-app/src/services/tts/ttsMetrics.ts b/apps/readest-app/src/services/tts/ttsMetrics.ts
+new file mode 100644
+index 0000000..a95af8b
+--- /dev/null
++++ b/apps/readest-app/src/services/tts/ttsMetrics.ts
+@@ -0,0 +1,108 @@
++// Latency bookkeeping for read-aloud, measured where the silence actually
++// happens: between one sentence ending and the next one becoming audible.
++//
++// M0 of the native-TTS low-latency work: before the pipeline changes anything,
++// this records what the current direct-speak path costs per sentence, so the
++// before/after numbers come from the same definition.
++//
++// Enabled by `localStorage['tts-latency-metrics'] = '1'` (or
++// `globalThis.__ttsLatency = true`). Samples are kept in memory only: reading
++// them twice must not require a round trip through the settings UI.
++// `globalThis.ttsLatencyReport()` returns the summary at any time.
++
++export interface TTSPercentiles {
++  p50: number;
++  p95: number;
++  max: number;
++}
++
++export interface TTSLatencyReport {
++  sentences: number;
++  // invoke('speak') -> the engine reporting that it started this sentence.
++  startDelayMs: TTSPercentiles;
++  // end of sentence N -> start of sentence N+1, i.e. the audible dead air.
++  gapMs: TTSPercentiles;
++  // Gap between the JS learning a sentence ended and the next submission, the
++  // part of the gap the pipeline can remove without touching the engine.
++  dispatchMs: TTSPercentiles;
++}
++
++const MAX_SAMPLES = 500;
++// A gap longer than this is a pause, a seek or a chapter break, not sentence
++// cadence; counting it would swamp the percentile that matters.
++const MAX_GAP_MS = 5000;
++const LOG_EVERY = 20;
++
++const startDelays: number[] = [];
++const gaps: number[] = [];
++const dispatches: number[] = [];
++
++let lastEndedAt: number | null = null;
++
++export const ttsMetricsEnabled = (): boolean => {
++  if ((globalThis as { __ttsLatency?: boolean }).__ttsLatency === true) return true;
++  try {
++    return globalThis.localStorage?.getItem('tts-latency-metrics') === '1';
++  } catch {
++    return false;
++  }
++};
++
++const clear = (): void => {
++  startDelays.length = 0;
++  gaps.length = 0;
++  dispatches.length = 0;
++  lastEndedAt = null;
++};
++
++const push = (list: number[], value: number): void => {
++  if (!Number.isFinite(value) || value < 0) return;
++  list.push(value);
++  if (list.length > MAX_SAMPLES) list.shift();
++};
++
++const percentile = (values: number[], p: number): number => {
++  if (values.length === 0) return 0;
++  const sorted = [...values].sort((a, b) => a - b);
++  const index = Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length));
++  return Math.round(sorted[index] ?? 0);
++};
++
++const summarize = (values: number[]): TTSPercentiles => ({
++  p50: percentile(values, 50),
++  p95: percentile(values, 95),
++  max: values.length ? Math.round(Math.max(...values)) : 0,
++});
++
++export const ttsLatencyReport = (): TTSLatencyReport => ({
++  sentences: startDelays.length,
++  startDelayMs: summarize(startDelays),
++  gapMs: summarize(gaps),
++  dispatchMs: summarize(dispatches),
++});
++
++// The engine reported this sentence audible at `startedAt`.
++export const noteSentenceStarted = (submittedAt: number, startedAt: number): void => {
++  push(startDelays, startedAt - submittedAt);
++  if (lastEndedAt !== null && startedAt > lastEndedAt) {
++    const gap = startedAt - lastEndedAt;
++    if (gap <= MAX_GAP_MS) push(gaps, gap);
++  }
++  // Only the cadence case: a pause or a chapter break is not JS overhead.
++  if (lastEndedAt !== null && startedAt - lastEndedAt <= MAX_GAP_MS) {
++    push(dispatches, submittedAt - lastEndedAt);
++  }
++};
++
++// The engine reported this sentence finished (or failed) at `endedAt`.
++export const noteSentenceEnded = (endedAt: number = Date.now()): void => {
++  lastEndedAt = endedAt;
++  if (ttsMetricsEnabled() && startDelays.length > 0 && startDelays.length % LOG_EVERY === 0) {
++    console.info('[TTS latency]', JSON.stringify(ttsLatencyReport()));
++  }
++};
++
++export const resetTTSLatency = (): void => clear();
++
++(globalThis as { ttsLatencyReport?: () => TTSLatencyReport }).ttsLatencyReport = ttsLatencyReport;
++(globalThis as { resetTTSLatency?: () => void }).resetTTSLatency = resetTTSLatency;
+-- 
+2.43.0
+

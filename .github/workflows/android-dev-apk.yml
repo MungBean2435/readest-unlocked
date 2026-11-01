@@ -1,0 +1,173 @@
+name: Build Android APK (dev)
+
+# One-off Android build for testing a patch: upstream Readest + the unlocked
+# recipe + the queued-native-TTS patch, packaged as ONE installable arm64 APK.
+#
+# Deliberately does not need any repository secret:
+#   * a throwaway Android keystore is generated on the runner, so the release
+#     APK is signed and installs (its signature differs from the published
+#     build: uninstall the existing Readest first, or it will refuse to update);
+#   * updater artifacts are switched off for this build, so no minisign key.
+#
+# Trigger: push ANY branch named topic/** (that is what makes it runnable
+# without touching the default branch), or use "Run workflow" once this file
+# is on the default branch.
+
+on:
+  push:
+    branches: ['topic/**']
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Upstream readest ref/sha to build'
+        required: false
+        default: '314a62d117293400113629f243045d201422938f'
+
+permissions:
+  contents: read
+
+env:
+  UPSTREAM_REPO: readest/readest
+  # Upstream commit the queued-native-TTS patch was written against.
+  DEFAULT_REF: '314a62d117293400113629f243045d201422938f'
+  NDK_VERSION: '28.2.13676358'
+  NEXT_TELEMETRY_DISABLED: '1'
+  HUSKY: '0'
+
+jobs:
+  apk:
+    name: Build arm64 APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out upstream Readest
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.UPSTREAM_REPO }}
+          ref: ${{ inputs.ref || env.DEFAULT_REF }}
+          persist-credentials: false
+
+      - name: Initialize the submodules
+        run: git submodule update --init --recursive
+
+      - name: Check out the build recipe
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.sha }}
+          path: .recipe
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install the Android NDK
+        run: sdkmanager "ndk;$NDK_VERSION"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-dev-apk
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Apply the unlock patch
+        run: node .recipe/tools/unlock.mjs
+
+      - name: Apply the queued native-TTS patch
+        run: git apply --verbose .recipe/patches/native-tts-queued-playout.patch
+
+      - name: Turn off updater artifacts for this build
+        # `createUpdaterArtifacts` demands a minisign private key; a test APK
+        # does not need updater signatures, and this keeps the job secret-free.
+        run: |
+          node -e '
+            const fs = require("fs");
+            const p = "apps/readest-app/src-tauri/tauri.conf.json";
+            const conf = JSON.parse(fs.readFileSync(p, "utf8"));
+            conf.bundle = { ...conf.bundle, createUpdaterArtifacts: false };
+            fs.writeFileSync(p, JSON.stringify(conf, null, 2) + "\n");
+          '
+
+      - name: Snapshot the patched tree
+        run: |
+          set -euo pipefail
+          git config user.email "ci@readest-unlocked.invalid"
+          git config user.name "readest-unlocked ci"
+          echo ".recipe/" >> .git/info/exclude
+          git add -A
+          git commit -m "chore: patched tree for a dev APK" --no-verify
+
+      - name: Stage the pdf.js vendor assets
+        run: pnpm --filter @readest/readest-app setup-vendors
+
+      - name: Initialize the Android project
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
+        run: |
+          set -euo pipefail
+          cd apps/readest-app
+          rm -rf src-tauri/gen/android
+          pnpm tauri android init
+          pnpm tauri icon ../../data/icons/readest-book.png
+          git checkout .
+
+      - name: Generate a throwaway signing key
+        run: |
+          set -euo pipefail
+          keytool -genkeypair -noprompt \
+            -keystore "$RUNNER_TEMP/dev-keystore.jks" \
+            -alias readestdev -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass readestdev -keypass readestdev \
+            -dname "CN=Readest Dev Build, O=Local, C=US"
+          {
+            echo "ANDROID_KEY_ALIAS=readestdev"
+            echo "ANDROID_KEY_PASSWORD=readestdev"
+            echo "ANDROID_KEY_BASE64=$(base64 -w0 "$RUNNER_TEMP/dev-keystore.jks")"
+          } >> "$GITHUB_ENV"
+          bash .recipe/helpers/android-keystore.sh
+
+      - name: Build the APK
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: |
+          set -euo pipefail
+          cd apps/readest-app
+          pnpm tauri android build -t aarch64
+          apk=src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+          test -f "$apk" || { echo "::error::no APK at $apk"; find src-tauri/gen/android -name '*.apk'; exit 1; }
+          cp "$apk" "../../readest-dev-arm64.apk"
+          ls -lh "../../readest-dev-arm64.apk"
+
+      - name: Check the APK is signed
+        run: |
+          set -euo pipefail
+          build_tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)
+          "$build_tools/apksigner" verify --print-certs readest-dev-arm64.apk | head -3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: readest-android-dev-arm64
+          path: readest-dev-arm64.apk
+          if-no-files-found: error
+          retention-days: 14

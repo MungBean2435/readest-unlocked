@@ -1,7 +1,7 @@
 From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 13:16:32 +0800
-Subject: [PATCH 01/15] feat(tts): queue native TTS sentences ahead of playback
+Subject: [PATCH 01/16] feat(tts): queue native TTS sentences ahead of playback
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -858,7 +858,7 @@ index 0000000..a95af8b
 From 5ddfd4e342af974c2935aed9a06451345fac3593 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:16:36 +0800
-Subject: [PATCH 02/15] feat(tts): queue native TTS across paragraph boundaries
+Subject: [PATCH 02/16] feat(tts): queue native TTS across paragraph boundaries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -1650,7 +1650,7 @@ index 1c7d09a..155ce77 100644
 From 13a0b6989b992e0e01d457e93b0cacbb8e508212 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:49:06 +0800
-Subject: [PATCH 03/15] chore(tts): surface the sentence cadence in the
+Subject: [PATCH 03/16] chore(tts): surface the sentence cadence in the
  notification (measurement build)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1713,7 +1713,7 @@ index daeb290..031d9a0 100644
 From 2724d2a40171e1be48748d2209f94562bca38d6c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 15:30:44 +0800
-Subject: [PATCH 04/15] feat(tts): merge consecutive sentences into one engine
+Subject: [PATCH 04/16] feat(tts): merge consecutive sentences into one engine
  utterance
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2190,7 +2190,7 @@ index 031d9a0..daeb290 100644
 From 8bf3f9c5a5b3453666b7082fc58d60c6ec8a4ab5 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 16:31:40 +0800
-Subject: [PATCH 05/15] Revert "feat(tts): merge consecutive sentences into one
+Subject: [PATCH 05/16] Revert "feat(tts): merge consecutive sentences into one
  engine utterance"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2611,7 +2611,7 @@ index 8f68cd3..c02a5a7 100644
 From c66c83ff7f7685c542d63a0856281433fc08a3c6 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:10:07 +0800
-Subject: [PATCH 06/15] feat(tts): serve Azure Speech through the custom TTS
+Subject: [PATCH 06/16] feat(tts): serve Azure Speech through the custom TTS
  service
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2899,7 +2899,7 @@ index f675318..0e4a157 100644
 From 16f2ad3c1f660d7e97b29677958aff83ad123bfa Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:36:44 +0800
-Subject: [PATCH 07/15] feat(tts): speak through a local MultiTTS forwarder
+Subject: [PATCH 07/16] feat(tts): speak through a local MultiTTS forwarder
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -3121,7 +3121,7 @@ index 0e4a157..4cdc9c2 100644
 From 4691aa67d8a637927b4a9577a84230345a25872f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:37:36 +0800
-Subject: [PATCH 08/15] test(tts): satisfy the request type in the
+Subject: [PATCH 08/16] test(tts): satisfy the request type in the
  custom-service tests
 
 ---
@@ -3161,7 +3161,7 @@ index 0dfffa8..aa36391 100644
 From 618765e508214d0a2c2fd6f76f1fccdde9579567 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:40:39 +0800
-Subject: [PATCH 09/15] feat(tts): read the MultiTTS catalog shape
+Subject: [PATCH 09/16] feat(tts): read the MultiTTS catalog shape
 
 The forwarder answers { success, data: { count, catalog: { <engine>: [...] } } },
 one bucket per engine it hosts. Parsing only the flat shapes it also tolerates
@@ -3267,7 +3267,7 @@ index 4cdc9c2..9cffdb9 100644
 From ede0f067ab70453a41682c87c08f39e7cffa1a81 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:47:20 +0800
-Subject: [PATCH 10/15] fix(tts): read index signatures with brackets in the
+Subject: [PATCH 10/16] fix(tts): read index signatures with brackets in the
  forwarder parser
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -3339,7 +3339,7 @@ index 9cffdb9..db00fbb 100644
 From 5fb3954230112cd8eaf36c3358dbd890d74a51a4 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 21:48:56 +0800
-Subject: [PATCH 11/15] feat(tts): let the reader choose the sentence and
+Subject: [PATCH 11/16] feat(tts): let the reader choose the sentence and
  paragraph pauses
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -3547,7 +3547,7 @@ index f0c8360..178a01d 100644
 From e22fbdb5dc3061cb424717206e27ec860ea47426 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:52:17 +0800
-Subject: [PATCH 12/15] feat(tts): speak to any service through an editable
+Subject: [PATCH 12/16] feat(tts): speak to any service through an editable
  request template
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4551,7 +4551,7 @@ index c4b94df..dbcf306 100644
 From b59f5ed9adf3ea4a2f9b0e333662f65cf828ce61 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:58:17 +0800
-Subject: [PATCH 13/15] fix(tts): let the Model field feed the templated
+Subject: [PATCH 13/16] fix(tts): let the Model field feed the templated
  request
 
 The MiniMax and ElevenLabs presets wrote their model name into the body, so
@@ -4656,7 +4656,7 @@ index 68f2108..dce7cd6 100644
 From 1d5f263fce4a0e9978b1bed3df0d02e56df83160 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:58:52 +0800
-Subject: [PATCH 14/15] test(tts): bracket the header lookup the project's
+Subject: [PATCH 14/16] test(tts): bracket the header lookup the project's
  strictness requires
 
 ---
@@ -4683,7 +4683,7 @@ index 96df9fe..8318336 100644
 From c94a95b9e8517d4409fbda725961f3a41fa2a2cd Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 23:24:36 +0800
-Subject: [PATCH 15/15] feat(tts): let a templated service list its own voices
+Subject: [PATCH 15/16] feat(tts): let a templated service list its own voices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -5010,6 +5010,366 @@ index dbcf306..d8a8812 100644
  }
  
  export interface CustomTTSService {
+-- 
+2.43.0
+
+
+From 89f0642cd493fd6c0b1f81255ba29c1e56dbfdcb Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Sun, 1 Nov 2026 23:27:45 +0800
+Subject: [PATCH 16/16] feat(tts): fetch the model list too, and fix the
+ MiniMax preset
+
+MiniMax's current model is speech-2.8-hd, not the speech-02-hd the preset
+carried, and its voice list is a POST to /v1/get_voice (the GET is a 404) that
+answers under system_voice. Both are now described by the preset.
+
+The model picker fills itself the same way the voice list does: a template may
+carry a model-list request, and the editor queries it as soon as a key is
+present, falling back to the free-text field when the service will not answer.
+---
+ .../__tests__/services/tts-template.test.ts   | 21 ++++
+ .../settings/CustomTTSServiceEditor.tsx       | 99 +++++++++++++++++--
+ .../src/services/tts/providers/presets.ts     | 22 ++++-
+ .../src/services/tts/providers/template.ts    | 38 +++++--
+ apps/readest-app/src/types/customTTS.ts       | 11 ++-
+ 5 files changed, 164 insertions(+), 27 deletions(-)
+
+diff --git a/apps/readest-app/src/__tests__/services/tts-template.test.ts b/apps/readest-app/src/__tests__/services/tts-template.test.ts
+index 74f37b7..1f7043f 100644
+--- a/apps/readest-app/src/__tests__/services/tts-template.test.ts
++++ b/apps/readest-app/src/__tests__/services/tts-template.test.ts
+@@ -5,6 +5,7 @@ vi.mock('@/services/ai/utils/httpFetch', () => ({ getAIFetch: () => fetchMock })
+ 
+ import {
+   buildTemplateRequest,
++  fetchTemplateModels,
+   fetchTemplateVoices,
+   getByPath,
+   renderTemplate,
+@@ -221,3 +222,23 @@ describe('fetchTemplateVoices', () => {
+     expect(fetchMock).not.toHaveBeenCalled();
+   });
+ });
++
++describe('fetchTemplateModels', () => {
++  test('fills the model picker from the service', async () => {
++    const service = minimax();
++    service.request!.modelList = {
++      url: '{{baseUrl}}/v1/models',
++      headers: { Authorization: 'Bearer {{apiKey}}' },
++      itemsPath: 'data',
++      idPath: 'id',
++    };
++    fetchMock.mockResolvedValue({
++      ok: true,
++      status: 200,
++      json: async () => ({ data: [{ id: 'speech-2.8-hd' }, { id: 'speech-02-hd' }] }),
++      text: async () => '',
++      arrayBuffer: async () => new ArrayBuffer(0),
++    });
++    await expect(fetchTemplateModels(service)).resolves.toEqual(['speech-2.8-hd', 'speech-02-hd']);
++  });
++});
+diff --git a/apps/readest-app/src/components/settings/CustomTTSServiceEditor.tsx b/apps/readest-app/src/components/settings/CustomTTSServiceEditor.tsx
+index 3dad0c6..32d590c 100644
+--- a/apps/readest-app/src/components/settings/CustomTTSServiceEditor.tsx
++++ b/apps/readest-app/src/components/settings/CustomTTSServiceEditor.tsx
+@@ -1,4 +1,4 @@
+-import React, { useState } from 'react';
++import React, { useEffect, useState } from 'react';
+ import { PiSpinner } from 'react-icons/pi';
+ import { useEnv } from '@/context/EnvContext';
+ import { useTranslation } from '@/hooks/useTranslation';
+@@ -10,6 +10,7 @@ import {
+ } from '@/services/tts/providers/openaiCompatible';
+ import type { CustomTTSService, TTSRequestTemplate } from '@/types/customTTS';
+ import { findPreset, TTS_PRESETS } from '@/services/tts/providers/presets';
++import { fetchTemplateModels } from '@/services/tts/providers/template';
+ import {
+   BoxedList,
+   SettingLabel,
+@@ -68,6 +69,7 @@ const CustomTTSServiceEditor: React.FC<CustomTTSServiceEditorProps> = ({ service
+   const [headersText, setHeadersText] = useState(() =>
+     JSON.stringify(draft.request?.headers ?? {}, null, 2),
+   );
++  const [models, setModels] = useState<string[]>([]);
+ 
+   const canSave = !!draft.name.trim() && !!draft.baseUrl.trim() && !!draft.model.trim();
+ 
+@@ -108,6 +110,36 @@ const CustomTTSServiceEditor: React.FC<CustomTTSServiceEditorProps> = ({ service
+     }
+   };
+ 
++  // The model list is part of the template, so a service that knows how to ask
++  // fills the picker by itself once a key is present.
++  const modelListUrl = draft.request?.modelList?.url;
++  useEffect(() => {
++    if (!modelListUrl) {
++      setModels([]);
++      return;
++    }
++    let cancelled = false;
++    const probe: CustomTTSService = {
++      ...draft,
++      id: 'model-probe',
++      addedAt: 0,
++      updatedAt: 0,
++      name: draft.name || 'probe',
++    } as CustomTTSService;
++    fetchTemplateModels(probe)
++      .then((ids) => {
++        if (!cancelled) setModels(ids);
++      })
++      .catch(() => {
++        if (!cancelled) setModels([]);
++      });
++    return () => {
++      cancelled = true;
++    };
++    // Re-probe when the endpoint or the credentials change.
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [modelListUrl, draft.baseUrl, draft.apiKey]);
++
+   const cleaned = (): Draft => ({
+     ...draft,
+     name: draft.name.trim(),
+@@ -264,15 +296,24 @@ const CustomTTSServiceEditor: React.FC<CustomTTSServiceEditorProps> = ({ service
+           />
+         </Field>
+         <Field id='tts-model' label={_('Model')}>
+-          <input
+-            id='tts-model'
+-            type='text'
+-            className={inputClass}
+-            value={draft.model}
+-            onChange={(e) => update({ model: e.target.value })}
+-            list='custom-tts-models'
+-            placeholder={MODEL_PRESETS[0]}
+-          />
++          {models.length > 0 ? (
++            <SettingsSelect
++              value={draft.model}
++              onChange={(e) => update({ model: e.target.value })}
++              ariaLabel={_('Model')}
++              options={models.map((model) => ({ value: model, label: model }))}
++            />
++          ) : (
++            <input
++              id='tts-model'
++              type='text'
++              className={inputClass}
++              value={draft.model}
++              onChange={(e) => update({ model: e.target.value })}
++              list='custom-tts-models'
++              placeholder={MODEL_PRESETS[0]}
++            />
++          )}
+           <datalist id='custom-tts-models'>
+             {MODEL_PRESETS.map((model) => (
+               <option key={model} value={model} />
+@@ -440,6 +481,44 @@ const CustomTTSServiceEditor: React.FC<CustomTTSServiceEditorProps> = ({ service
+                 </Field>
+               </>
+             )}
++            <details className='border-base-300 border-t'>
++              <summary className='cursor-pointer py-2 text-sm'>
++                {_('Model list (optional)')}
++              </summary>
++              <Field id='tts-template-models-url' label={_('List URL')}>
++                <input
++                  id='tts-template-models-url'
++                  type='text'
++                  className={inputClass}
++                  value={template.modelList?.url ?? ''}
++                  onChange={(e) =>
++                    updateTemplate({
++                      modelList: {
++                        idPath: template.modelList?.idPath ?? 'id',
++                        ...template.modelList,
++                        url: e.target.value,
++                      },
++                    })
++                  }
++                  placeholder='{{baseUrl}}/v1/models'
++                />
++              </Field>
++              <Field id='tts-template-models-id' label={_('Model id field')}>
++                <input
++                  id='tts-template-models-id'
++                  type='text'
++                  className={inputClass}
++                  value={template.modelList?.idPath ?? ''}
++                  onChange={(e) =>
++                    template.modelList &&
++                    updateTemplate({
++                      modelList: { ...template.modelList, idPath: e.target.value },
++                    })
++                  }
++                  placeholder='id'
++                />
++              </Field>
++            </details>
+             <details className='border-base-300 border-t'>
+               <summary className='cursor-pointer py-2 text-sm'>
+                 {_('Voice list (optional)')}
+diff --git a/apps/readest-app/src/services/tts/providers/presets.ts b/apps/readest-app/src/services/tts/providers/presets.ts
+index 97118c0..4cc11aa 100644
+--- a/apps/readest-app/src/services/tts/providers/presets.ts
++++ b/apps/readest-app/src/services/tts/providers/presets.ts
+@@ -47,10 +47,10 @@ export const TTS_PRESETS: TTSPreset[] = [
+   {
+     id: 'minimax',
+     name: 'MiniMax（t2a_v2）',
+-    note: '响应是 hex 编码的音频；鉴权失败也返回 HTTP 200',
++    note: '响应是 hex 编码的音频；鉴权失败也返回 HTTP 200。GroupId 见控制台',
+     baseUrl: 'https://api.minimaxi.com',
+-    model: 'speech-02-hd',
+-    voices: 'male-qn-qingse, female-shaonv, female-yujie, presenter_male',
++    model: 'speech-2.8-hd',
++    voices: '',
+     request: {
+       method: 'POST',
+       url: '{{baseUrl}}/v1/t2a_v2',
+@@ -63,10 +63,18 @@ export const TTS_PRESETS: TTSPreset[] = [
+       successPath: 'base_resp.status_code',
+       successValue: '0',
+       errorPath: 'base_resp.status_msg',
++      modelList: {
++        url: '{{baseUrl}}/v1/models',
++        headers: { Authorization: 'Bearer {{apiKey}}' },
++        itemsPath: 'data',
++        idPath: 'id',
++      },
+       voiceList: {
+-        // GroupId is per account: paste yours into the query.
++        // POST, not GET — and GroupId is per account.
++        method: 'POST',
+         url: '{{baseUrl}}/v1/get_voice?GroupId=你的GroupId',
+         headers: { Authorization: 'Bearer {{apiKey}}' },
++        body: '{"voice_type":"system"}',
+         itemsPath: 'system_voice',
+         idPath: 'voice_id',
+         namePath: 'voice_name',
+@@ -87,6 +95,12 @@ export const TTS_PRESETS: TTSPreset[] = [
+       bodyType: 'json',
+       body: '{"text":{{text}},"model_id":{{model}}}',
+       responseType: 'audio',
++      modelList: {
++        url: '{{baseUrl}}/v1/models',
++        headers: { 'xi-api-key': '{{apiKey}}' },
++        idPath: 'model_id',
++        namePath: 'name',
++      },
+       voiceList: {
+         url: '{{baseUrl}}/v1/voices',
+         headers: { 'xi-api-key': '{{apiKey}}' },
+diff --git a/apps/readest-app/src/services/tts/providers/template.ts b/apps/readest-app/src/services/tts/providers/template.ts
+index 2be0a08..c929c3c 100644
+--- a/apps/readest-app/src/services/tts/providers/template.ts
++++ b/apps/readest-app/src/services/tts/providers/template.ts
+@@ -5,7 +5,7 @@
+ // instance) — and a template covers all of it without shipping code per vendor.
+ 
+ import { getAIFetch } from '@/services/ai/utils/httpFetch';
+-import type { CustomTTSService, TTSRequestTemplate } from '@/types/customTTS';
++import type { CustomTTSService, TTSListTemplate, TTSRequestTemplate } from '@/types/customTTS';
+ 
+ import {
+   type SpeechSynthesisRequest,
+@@ -135,11 +135,11 @@ const firstArray = (value: unknown): unknown[] => {
+   return [];
+ };
+ 
+-/** The voices a templated service lists, when its template says how to ask. */
+-export const fetchTemplateVoices = async (
++/** Ask a list endpoint (voices or models) described by a template. */
++export const fetchTemplateList = async (
+   service: CustomTTSService,
+-): Promise<{ name: string; label?: string; lang?: string }[]> => {
+-  const list = service.request?.voiceList;
++  list: TTSListTemplate | undefined,
++): Promise<{ id: string; label?: string; lang?: string }[]> => {
+   if (!list) return [];
+   const ctx: TemplateContext = {
+     text: '',
+@@ -157,7 +157,12 @@ export const fetchTemplateVoices = async (
+   for (const [key, value] of Object.entries(list.headers ?? {})) {
+     if (value) headers[key] = renderTemplate(value, ctx, 'raw');
+   }
+-  const res = await getAIFetch()(url, { headers });
++  if (list.body && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
++  const res = await getAIFetch()(url, {
++    method: list.method ?? 'GET',
++    headers,
++    ...(list.body ? { body: renderTemplate(list.body, ctx, 'json') } : {}),
++  });
+   if (!res.ok) return [];
+   const body: unknown = await res.json();
+   const items = list.itemsPath ? (getByPath(body, list.itemsPath) as unknown[]) : firstArray(body);
+@@ -168,18 +173,31 @@ export const fetchTemplateVoices = async (
+     if (typeof id !== 'string' || !id) return [];
+     const name = list.namePath ? getByPath(item, list.namePath) : undefined;
+     const locale = list.localePath ? getByPath(item, list.localePath) : undefined;
+-    const label = typeof name === 'string' && name ? name : undefined;
++    const label = typeof name === 'string' && name && name !== id ? name : undefined;
+     return [
+       {
+-        // `name` is what the request needs; `label` is what the picker shows.
+-        name: id,
+-        ...(label && label !== id ? { label } : {}),
++        id,
++        ...(label ? { label } : {}),
+         ...(typeof locale === 'string' && locale ? { lang: locale } : {}),
+       },
+     ];
+   });
+ };
+ 
++export const fetchTemplateVoices = async (
++  service: CustomTTSService,
++): Promise<{ name: string; label?: string; lang?: string }[]> => {
++  const listed = await fetchTemplateList(service, service.request?.voiceList);
++  return listed.map((entry) => ({
++    name: entry.id,
++    ...(entry.label ? { label: entry.label } : {}),
++    ...(entry.lang ? { lang: entry.lang } : {}),
++  }));
++};
++
++export const fetchTemplateModels = async (service: CustomTTSService): Promise<string[]> =>
++  (await fetchTemplateList(service, service.request?.modelList)).map((entry) => entry.id);
++
+ export const buildTemplateRequest = (
+   service: CustomTTSService,
+   req: SpeechSynthesisRequest,
+diff --git a/apps/readest-app/src/types/customTTS.ts b/apps/readest-app/src/types/customTTS.ts
+index d8a8812..4962e5b 100644
+--- a/apps/readest-app/src/types/customTTS.ts
++++ b/apps/readest-app/src/types/customTTS.ts
+@@ -33,14 +33,19 @@ export interface TTSRequestTemplate {
+   /** Where the vendor puts its error message. */
+   errorPath?: string;
+   /** Optional: how to list this service's voices, so the picker fills itself. */
+-  voiceList?: TTSVoiceListTemplate;
++  voiceList?: TTSListTemplate;
++  /** Optional: how to list the models this key may use. */
++  modelList?: TTSListTemplate;
+ }
+ 
+-export interface TTSVoiceListTemplate {
++export interface TTSListTemplate {
+   /** May use {{baseUrl}} and {{apiKey}}. */
+   url: string;
++  method?: 'GET' | 'POST';
+   headers?: Record<string, string>;
+-  /** Path to the array of voices; omitted = the first array found. */
++  /** JSON body for a POST list request. */
++  body?: string;
++  /** Path to the array; omitted = the first array found. */
+   itemsPath?: string;
+   /** Path inside one item to its id (required) and its name/locale. */
+   idPath: string;
 -- 
 2.43.0
 

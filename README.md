@@ -1,3 +1,66 @@
+> **这个 fork 是做什么的**
+>
+> 在 [hirofumo/readest-unlocked](https://github.com/hirofumo/readest-unlocked) 的构建配方之上，专门打磨**朗读（TTS）**：让 Android 系统 TTS 与自建 TTS 服务也能像内置 Edge 朗读那样几乎无停顿，并支持接入微软多语言音色、MiMo、以及本地 MultiTTS 引擎。
+>
+> - **下载 APK**：[Releases](https://github.com/MungBean2435/readest-unlocked/releases) · 最新 `apk-v6`（Android arm64，约 56 MB）
+> - **TTS 补丁**：[`patches/native-tts-queued-playout.patch`](https://github.com/MungBean2435/readest-unlocked/blob/apk/dev/patches/native-tts-queued-playout.patch)
+> - **构建工作流**：[`.github/workflows/android-dev-apk.yml`](https://github.com/MungBean2435/readest-unlocked/blob/apk/dev/.github/workflows/android-dev-apk.yml)（只出 Android arm64，不需要任何 secret）
+> - **改动基线**：`readest@314a62d`（补丁按此 commit 生成，换 ref 会导致 `git apply` 失败）
+
+## 朗读改了什么
+
+| 改动 | 解决的问题 |
+| --- | --- |
+| **句级排队播放** | 系统 TTS 原来「提交一句 → 等播完 → 再提交下一句」，每句都要付一次引擎启动 + IPC 的代价。改成一整段提前入队，边播边补 |
+| **跨段落连续** | 换段原来是「停引擎 → sleep 0.3s → flush → 冷启动」。改成换段不停引擎，下一段的句子接在队列后面 |
+| **`queuedBlocks` 能力位** | 告诉控制器块与块之间已经连续，不要再自己 sleep |
+| **Azure Speech** | 通过「自定义 TTS 服务」接 Azure：`https://<区域>.tts.speech.microsoft.com/cognitiveservices` + key，可用 Edge 没有的多语言音色（XiaoxiaoMultilingual、XiaochenMultilingual…） |
+| **MultiTTS 转发器** | `http://localhost:8774` 即可用 MultiTTS 里那 163 个音色（含离线和在线引擎），同样走缓冲流水线 |
+| **朗读延迟埋点** | `globalThis.ttsLatencyReport()` 输出句间间隔的 P50/P95，用于对比改动前后 |
+
+这些改动全部在 `apps/readest-app/src/services/tts/` 下，不碰解锁逻辑；解锁仍然来自上游配方。
+
+### 为什么这样就不卡了
+
+系统 TTS 的接口是「播放型」的：`speak(text)` 一调用就出声，拿不到音频字节。于是每句都要经历 `提交 → 引擎启动 → 开音频轨道 → 朗读 → 关轨道 → 事件回传`，这些步骤不能重叠，句间空隙由引擎决定（100–400ms），改不了。
+
+Edge 与自定义服务走的是另一条路：接口返回**音频字节**，播放由应用自己的 `BufferedTTSClient` 负责——解码、裁静音、变速、排进共享 `AudioContext` 的时间轴。句子边界只是一个时间戳，句间停顿（0.15s）和段间停顿（0.3s）由我们决定，而且可以在播第 1 句时把第 4 句都合成好。
+
+## 自己构建
+
+```bash
+# 推到 apk/** 分支即自动触发（只构建 Android arm64）
+git push origin apk/dev
+```
+
+或在 Actions 页手动 `Run workflow`。约 20 分钟产出 `readest-android-dev-arm64` artifact。工作流会：
+
+1. 检出 `readest@314a62d` 与 `.recipe`（解锁脚本）
+2. `node .recipe/tools/unlock.mjs` 套解锁补丁
+3. `git apply patches/native-tts-queued-playout.patch`
+4. 关闭 updater 签名、生成一次性 keystore、构建、上传 APK
+
+## 安装与已知限制
+
+- **一次性签名**：与官方版、与上游 unlocked 版签名都不同，**必须先卸载旧版**才能安装；装上也收不到自动更新
+- **只有 arm64-v8a**：x86 模拟器装不了
+- **MultiTTS 需常驻后台**：转发器是那个 App 提供的本地 HTTP 服务，被系统回收后合成会失败
+- **缓存占用**：MultiTTS 返回未压缩 WAV（每句 40–90 KB），长时间听书缓存会明显变大；Azure 与 Edge 返回 MP3，体积约 1/8
+
+## 版本记录
+
+| 版本 | 内容 |
+| --- | --- |
+| `apk-v6` | MultiTTS 转发器 + Azure 语音；朗读回到稳定行为 |
+| `apk-v5` | 回退「多句合并」（存在换段重播问题） |
+| `apk-v4` | 多句合并（有 bug，仅存档） |
+| `apk-v2` | 跨段落连续播放 |
+| `apk-v1` | 句级排队播放 |
+
+---
+
+以下为上游 [readest-unlocked](https://github.com/hirofumo/readest-unlocked) 的原始说明。
+
 # Readest Unlocked
 
 English | [中文](README.zh-CN.md)

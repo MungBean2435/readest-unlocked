@@ -1,7 +1,7 @@
 From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 13:16:32 +0800
-Subject: [PATCH 1/5] feat(tts): queue native TTS sentences ahead of playback
+Subject: [PATCH 1/6] feat(tts): queue native TTS sentences ahead of playback
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -858,7 +858,7 @@ index 0000000..a95af8b
 From 5ddfd4e342af974c2935aed9a06451345fac3593 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:16:36 +0800
-Subject: [PATCH 2/5] feat(tts): queue native TTS across paragraph boundaries
+Subject: [PATCH 2/6] feat(tts): queue native TTS across paragraph boundaries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -1650,7 +1650,7 @@ index 1c7d09a..155ce77 100644
 From 13a0b6989b992e0e01d457e93b0cacbb8e508212 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:49:06 +0800
-Subject: [PATCH 3/5] chore(tts): surface the sentence cadence in the
+Subject: [PATCH 3/6] chore(tts): surface the sentence cadence in the
  notification (measurement build)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1713,7 +1713,7 @@ index daeb290..031d9a0 100644
 From 2724d2a40171e1be48748d2209f94562bca38d6c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 15:30:44 +0800
-Subject: [PATCH 4/5] feat(tts): merge consecutive sentences into one engine
+Subject: [PATCH 4/6] feat(tts): merge consecutive sentences into one engine
  utterance
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2190,7 +2190,7 @@ index 031d9a0..daeb290 100644
 From 8bf3f9c5a5b3453666b7082fc58d60c6ec8a4ab5 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 16:31:40 +0800
-Subject: [PATCH 5/5] Revert "feat(tts): merge consecutive sentences into one
+Subject: [PATCH 5/6] Revert "feat(tts): merge consecutive sentences into one
  engine utterance"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2604,6 +2604,294 @@ index 8f68cd3..c02a5a7 100644
        }
      }
  
+-- 
+2.43.0
+
+
+From c66c83ff7f7685c542d63a0856281433fc08a3c6 Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Sun, 1 Nov 2026 17:10:07 +0800
+Subject: [PATCH 6/6] feat(tts): serve Azure Speech through the custom TTS
+ service
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The multilingual neural voices — XiaoxiaoMultilingual, XiaochenMultilingual,
+YunfanMultilingual — are not on the Edge Read Aloud endpoint: asking it for
+them returns no audio at all, which a probe against the live service confirms.
+They come from Azure Speech instead, and that is where the voices a user's
+own TTS setup offers actually live.
+
+Recognise an Azure host in the custom service's base URL and speak its
+protocol: SSML with the voice, Ocp-Apim-Subscription-Key instead of a bearer
+token, and the same 24 kHz / 48 kbps MP3 the Edge path already produces. The
+voice list comes from Azure's own endpoint, so the picker shows the locales
+it actually serves.
+
+The payoff is that these voices then run through BufferedTTSClient like every
+other buffered engine: prefetch, gapless playout, cache, rate. No new settings
+surface — the service is added the same way as any other, with the region's
+endpoint as the base URL.
+
+Errors map by cause: 401/403 is a key or region mistake and ends the session,
+400 is this sentence, 429 is worth retrying.
+---
+ .../services/custom-tts-azure.test.ts         | 133 ++++++++++++++++++
+ .../tts/providers/openaiCompatible.ts         |  86 +++++++++++
+ 2 files changed, 219 insertions(+)
+ create mode 100644 apps/readest-app/src/__tests__/services/custom-tts-azure.test.ts
+
+diff --git a/apps/readest-app/src/__tests__/services/custom-tts-azure.test.ts b/apps/readest-app/src/__tests__/services/custom-tts-azure.test.ts
+new file mode 100644
+index 0000000..458917b
+--- /dev/null
++++ b/apps/readest-app/src/__tests__/services/custom-tts-azure.test.ts
+@@ -0,0 +1,133 @@
++import { beforeEach, describe, expect, test, vi } from 'vitest';
++
++const fetchMock = vi.fn();
++vi.mock('@/services/ai/utils/httpFetch', () => ({ getAIFetch: () => fetchMock }));
++
++import {
++  isAzureSpeech,
++  OpenAICompatibleSpeechProvider,
++} from '@/services/tts/providers/openaiCompatible';
++import {
++  SpeechSynthesisFatalError,
++  SpeechSynthesisPermanentError,
++} from '@/services/tts/providers/types';
++import type { CustomTTSService } from '@/types/customTTS';
++
++const service = (overrides: Partial<CustomTTSService> = {}): CustomTTSService => ({
++  id: 'az',
++  name: 'Azure 语音',
++  baseUrl: 'https://eastasia.tts.speech.microsoft.com/cognitiveservices',
++  apiKey: 'azure-key',
++  model: 'azure',
++  voices: 'zh-CN-XiaoxiaoMultilingualNeural',
++  addedAt: 0,
++  updatedAt: 0,
++  ...overrides,
++});
++
++const response = (init: Partial<{ ok: boolean; status: number; body: unknown }> = {}) => {
++  const { ok = true, status = 200, body = new ArrayBuffer(8) } = init;
++  return {
++    ok,
++    status,
++    text: async () => (typeof body === 'string' ? body : ''),
++    arrayBuffer: async () => body as ArrayBuffer,
++    json: async () => body,
++  };
++};
++
++const buildProvider = (svc: CustomTTSService) =>
++  new OpenAICompatibleSpeechProvider(
++    () => [svc],
++    async () => true,
++  );
++
++beforeEach(() => {
++  fetchMock.mockReset();
++});
++
++describe('Azure Speech through the custom TTS service', () => {
++  test('recognises Azure hosts and leaves OpenAI endpoints alone', () => {
++    expect(isAzureSpeech(service())).toBe(true);
++    expect(isAzureSpeech(service({ baseUrl: 'https://westeurope.tts.speech.microsoft.com' }))).toBe(
++      true,
++    );
++    expect(
++      isAzureSpeech(service({ baseUrl: 'https://my-resource.cognitiveservices.azure.com' })),
++    ).toBe(true);
++    expect(isAzureSpeech(service({ baseUrl: 'https://api.openai.com/v1' }))).toBe(false);
++    expect(isAzureSpeech(service({ baseUrl: 'https://notazure.example.com' }))).toBe(false);
++  });
++
++  test('posts SSML with the subscription key instead of a bearer token', async () => {
++    fetchMock.mockResolvedValue(response());
++    const provider = buildProvider(service());
++
++    await provider.synthesize(
++      { lang: 'zh-CN', text: '你好，世界 & <测试>', voice: 'az:zh-CN-XiaoxiaoMultilingualNeural' },
++      new AbortController().signal,
++    );
++
++    const [url, init] = fetchMock.mock.calls[0]!;
++    expect(url).toBe('https://eastasia.tts.speech.microsoft.com/cognitiveservices/v1');
++    expect(init.method).toBe('POST');
++    expect(init.headers['Ocp-Apim-Subscription-Key']).toBe('azure-key');
++    expect(init.headers.Authorization).toBeUndefined();
++    expect(init.headers['X-Microsoft-OutputFormat']).toBe('audio-24khz-48kbitrate-mp3');
++    expect(init.body).toContain('<voice name="zh-CN-XiaoxiaoMultilingualNeural">');
++    // The text is escaped, not interpolated: an ampersand would break the SSML.
++    expect(init.body).toContain('&#38;');
++    expect(init.body).toContain('&#60;测试&#62;');
++  });
++
++  test('a bad key is fatal, a bad request is permanent, a quota hit is retryable', async () => {
++    const provider = buildProvider(service());
++    const request = {
++      lang: 'zh-CN',
++      text: '你好',
++      voice: 'az:zh-CN-XiaoxiaoMultilingualNeural',
++    };
++
++    fetchMock.mockResolvedValueOnce(response({ ok: false, status: 401, body: 'denied' }));
++    await expect(provider.synthesize(request, new AbortController().signal)).rejects.toBeInstanceOf(
++      SpeechSynthesisFatalError,
++    );
++
++    fetchMock.mockResolvedValueOnce(response({ ok: false, status: 400, body: 'bad ssml' }));
++    await expect(provider.synthesize(request, new AbortController().signal)).rejects.toBeInstanceOf(
++      SpeechSynthesisPermanentError,
++    );
++
++    fetchMock.mockResolvedValueOnce(response({ ok: false, status: 429, body: 'quota' }));
++    const retryable = await provider
++      .synthesize(request, new AbortController().signal)
++      .catch((error: unknown) => error);
++    expect(retryable).toBeInstanceOf(Error);
++    expect(retryable).not.toBeInstanceOf(SpeechSynthesisFatalError);
++    expect(retryable).not.toBeInstanceOf(SpeechSynthesisPermanentError);
++  });
++
++  test('lists the voices Azure serves, with their locales', async () => {
++    fetchMock.mockResolvedValue(
++      response({
++        body: [
++          { ShortName: 'zh-CN-XiaoxiaoMultilingualNeural', Locale: 'zh-CN', VoiceType: 'Neural' },
++          { ShortName: 'zh-CN-XiaochenMultilingualNeural', Locale: 'zh-CN', VoiceType: 'Neural' },
++          { ShortName: 'en-US-AvaMultilingualNeural', Locale: 'en-US', VoiceType: 'Neural' },
++        ],
++      }),
++    );
++    const provider = buildProvider(service({ voices: undefined }));
++
++    const voices = await provider.getAllVoices();
++    expect(fetchMock.mock.calls[0]![0]).toBe(
++      'https://eastasia.tts.speech.microsoft.com/cognitiveservices/voices/list',
++    );
++    expect(voices.map((voice) => voice.id)).toEqual([
++      'az:zh-CN-XiaoxiaoMultilingualNeural',
++      'az:zh-CN-XiaochenMultilingualNeural',
++      'az:en-US-AvaMultilingualNeural',
++    ]);
++    expect(voices[0]!.lang).toBe('zh-CN');
++  });
++});
+diff --git a/apps/readest-app/src/services/tts/providers/openaiCompatible.ts b/apps/readest-app/src/services/tts/providers/openaiCompatible.ts
+index f675318..0e4a157 100644
+--- a/apps/readest-app/src/services/tts/providers/openaiCompatible.ts
++++ b/apps/readest-app/src/services/tts/providers/openaiCompatible.ts
+@@ -64,6 +64,52 @@ export const customVoiceId = (serviceId: string, voice: string) => `${serviceId}
+ const endpoint = (service: CustomTTSService, path: string) =>
+   `${service.baseUrl.replace(/(\/audio\/(speech|voices))?\/*$/, '')}${path}`;
+ 
++// Azure Speech is not OpenAI-compatible, but it is the only source of the
++// multilingual neural voices (XiaoxiaoMultilingual, XiaochenMultilingual, …)
++// that Edge Read Aloud does not serve. Recognising its host lets those voices
++// run through the same buffered pipeline — gapless playback, cache, rate —
++// from the one settings surface the app already has.
++export const isAzureSpeech = (service: Pick<CustomTTSService, 'baseUrl'>): boolean => {
++  try {
++    return /(^|\.)(tts\.speech\.microsoft\.com|cognitiveservices\.azure\.com)$/i.test(
++      new URL(service.baseUrl).hostname,
++    );
++  } catch {
++    return false;
++  }
++};
++
++// `https://<region>.tts.speech.microsoft.com/cognitiveservices`, with or
++// without the trailing segment, both land on the synthesis endpoint.
++const azureBase = (service: CustomTTSService): string => service.baseUrl.replace(/\/+$/, '');
++
++const azureSpeechEndpoint = (service: CustomTTSService): string => {
++  const base = azureBase(service);
++  return `${base.endsWith('/cognitiveservices') ? base : `${base}/cognitiveservices`}/v1`;
++};
++
++const azureVoiceListEndpoint = (service: CustomTTSService): string => {
++  const base = azureBase(service);
++  return `${base.endsWith('/cognitiveservices') ? base : `${base}/cognitiveservices`}/voices/list`;
++};
++
++// Azure's REST API takes SSML, not JSON. The playback rate is applied later by
++// the player, so the prosody stays at the service default.
++const escapeXml = (text: string): string =>
++  text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
++
++const azureSSML = (lang: string, text: string, voice: string): string =>
++  `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" ` +
++  `xml:lang="${escapeXml(lang)}"><voice name="${escapeXml(voice)}">` +
++  `${escapeXml(text)}</voice></speak>`;
++
++const azureHeaders = (service: CustomTTSService): Record<string, string> => ({
++  'Ocp-Apim-Subscription-Key': service.apiKey ?? '',
++  'Content-Type': 'application/ssml+xml',
++  'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mp3',
++  'User-Agent': 'readest',
++});
++
+ // MiMo's endpoint is known, so the path typed into its base URL is ignored.
+ export const speechEndpoint = (service: CustomTTSService) =>
+   isMiMoService(service)
+@@ -118,6 +164,26 @@ const fetchServiceVoices = async (service: CustomTTSService): Promise<ListedVoic
+   const typed = service.voices?.split(',').flatMap((name) => name.trim() || []);
+   if (typed?.length) return typed.map((name) => ({ name }));
+   if (isMiMoService(service)) return MIMO_VOICES;
++  if (isAzureSpeech(service)) {
++    try {
++      const res = await getAIFetch()(azureVoiceListEndpoint(service), {
++        headers: { 'Ocp-Apim-Subscription-Key': service.apiKey ?? '' },
++      });
++      if (res.ok) {
++        const list = (await res.json()) as {
++          ShortName?: string;
++          Locale?: string;
++          VoiceType?: string;
++        }[];
++        const voices = (Array.isArray(list) ? list : [])
++          .filter((v) => v.ShortName && v.VoiceType !== 'Professional')
++          .map((v) => ({ name: v.ShortName!, lang: v.Locale }));
++        if (voices.length) return voices;
++      }
++    } catch {
++      // Fall through to the names typed into the service.
++    }
++  }
+   // A timer rather than AbortSignal.timeout: tauriFetch rejects unhandled when
+   // a finished request is aborted.
+   const controller = new AbortController();
+@@ -244,6 +310,26 @@ export class OpenAICompatibleSpeechProvider implements SpeechProvider {
+     const onAbort = () => controller.abort();
+     signal.addEventListener('abort', onAbort, { once: true });
+     try {
++      if (isAzureSpeech(service)) {
++        const res = await getAIFetch()(azureSpeechEndpoint(service), {
++          method: 'POST',
++          headers: azureHeaders(service),
++          body: azureSSML(req.lang, req.text, voice),
++          signal: controller.signal,
++        });
++        if (!res.ok) {
++          const detail = (await res.text().catch(() => '')).slice(0, 300);
++          const message = `${service.name}: HTTP ${res.status}${detail ? ` ${detail}` : ''}`;
++          // Bad key, wrong region or a disabled resource: nothing later works.
++          if (res.status === 401 || res.status === 403)
++            throw new SpeechSynthesisFatalError(message);
++          if (res.status < 500 && !TRANSIENT_STATUSES.has(res.status)) {
++            throw new SpeechSynthesisPermanentError(message);
++          }
++          throw new Error(message);
++        }
++        return { audio: await res.arrayBuffer(), boundaries: [] };
++      }
+       const body = isMiMo
+         ? {
+             model: service.model,
 -- 
 2.43.0
 

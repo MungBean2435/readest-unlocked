@@ -1,7 +1,7 @@
 From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 13:16:32 +0800
-Subject: [PATCH 01/12] feat(tts): queue native TTS sentences ahead of playback
+Subject: [PATCH 01/13] feat(tts): queue native TTS sentences ahead of playback
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -858,7 +858,7 @@ index 0000000..a95af8b
 From 5ddfd4e342af974c2935aed9a06451345fac3593 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:16:36 +0800
-Subject: [PATCH 02/12] feat(tts): queue native TTS across paragraph boundaries
+Subject: [PATCH 02/13] feat(tts): queue native TTS across paragraph boundaries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -1650,7 +1650,7 @@ index 1c7d09a..155ce77 100644
 From 13a0b6989b992e0e01d457e93b0cacbb8e508212 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:49:06 +0800
-Subject: [PATCH 03/12] chore(tts): surface the sentence cadence in the
+Subject: [PATCH 03/13] chore(tts): surface the sentence cadence in the
  notification (measurement build)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1713,7 +1713,7 @@ index daeb290..031d9a0 100644
 From 2724d2a40171e1be48748d2209f94562bca38d6c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 15:30:44 +0800
-Subject: [PATCH 04/12] feat(tts): merge consecutive sentences into one engine
+Subject: [PATCH 04/13] feat(tts): merge consecutive sentences into one engine
  utterance
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2190,7 +2190,7 @@ index 031d9a0..daeb290 100644
 From 8bf3f9c5a5b3453666b7082fc58d60c6ec8a4ab5 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 16:31:40 +0800
-Subject: [PATCH 05/12] Revert "feat(tts): merge consecutive sentences into one
+Subject: [PATCH 05/13] Revert "feat(tts): merge consecutive sentences into one
  engine utterance"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2611,7 +2611,7 @@ index 8f68cd3..c02a5a7 100644
 From c66c83ff7f7685c542d63a0856281433fc08a3c6 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:10:07 +0800
-Subject: [PATCH 06/12] feat(tts): serve Azure Speech through the custom TTS
+Subject: [PATCH 06/13] feat(tts): serve Azure Speech through the custom TTS
  service
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2899,7 +2899,7 @@ index f675318..0e4a157 100644
 From 16f2ad3c1f660d7e97b29677958aff83ad123bfa Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:36:44 +0800
-Subject: [PATCH 07/12] feat(tts): speak through a local MultiTTS forwarder
+Subject: [PATCH 07/13] feat(tts): speak through a local MultiTTS forwarder
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -3121,7 +3121,7 @@ index 0e4a157..4cdc9c2 100644
 From 4691aa67d8a637927b4a9577a84230345a25872f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:37:36 +0800
-Subject: [PATCH 08/12] test(tts): satisfy the request type in the
+Subject: [PATCH 08/13] test(tts): satisfy the request type in the
  custom-service tests
 
 ---
@@ -3161,7 +3161,7 @@ index 0dfffa8..aa36391 100644
 From 618765e508214d0a2c2fd6f76f1fccdde9579567 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:40:39 +0800
-Subject: [PATCH 09/12] feat(tts): read the MultiTTS catalog shape
+Subject: [PATCH 09/13] feat(tts): read the MultiTTS catalog shape
 
 The forwarder answers { success, data: { count, catalog: { <engine>: [...] } } },
 one bucket per engine it hosts. Parsing only the flat shapes it also tolerates
@@ -3267,7 +3267,7 @@ index 4cdc9c2..9cffdb9 100644
 From ede0f067ab70453a41682c87c08f39e7cffa1a81 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:47:20 +0800
-Subject: [PATCH 10/12] fix(tts): read index signatures with brackets in the
+Subject: [PATCH 10/13] fix(tts): read index signatures with brackets in the
  forwarder parser
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -3339,7 +3339,7 @@ index 9cffdb9..db00fbb 100644
 From 5fb3954230112cd8eaf36c3358dbd890d74a51a4 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 21:48:56 +0800
-Subject: [PATCH 11/12] feat(tts): let the reader choose the sentence and
+Subject: [PATCH 11/13] feat(tts): let the reader choose the sentence and
  paragraph pauses
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -3547,7 +3547,7 @@ index f0c8360..178a01d 100644
 From e22fbdb5dc3061cb424717206e27ec860ea47426 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:52:17 +0800
-Subject: [PATCH 12/12] feat(tts): speak to any service through an editable
+Subject: [PATCH 12/13] feat(tts): speak to any service through an editable
  request template
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4544,6 +4544,111 @@ index c4b94df..dbcf306 100644
    /** Style instructions for models that take them (e.g. gpt-4o-mini-tts). */
    instructions?: string;
    /** Audio format to request; unset means MP3. 'none' sends no format, for
+-- 
+2.43.0
+
+
+From b59f5ed9adf3ea4a2f9b0e333662f65cf828ce61 Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Sun, 1 Nov 2026 22:58:17 +0800
+Subject: [PATCH 13/13] fix(tts): let the Model field feed the templated
+ request
+
+The MiniMax and ElevenLabs presets wrote their model name into the body, so
+editing Model changed nothing. {{model}} is now available in every template,
+and those presets use it; {{format}} follows the service's Response Format too.
+---
+ .../readest-app/src/__tests__/services/tts-template.test.ts | 5 +++++
+ apps/readest-app/src/services/tts/providers/presets.ts      | 6 +++---
+ apps/readest-app/src/services/tts/providers/template.ts     | 5 ++++-
+ 3 files changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/apps/readest-app/src/__tests__/services/tts-template.test.ts b/apps/readest-app/src/__tests__/services/tts-template.test.ts
+index 5db5570..96df9fe 100644
+--- a/apps/readest-app/src/__tests__/services/tts-template.test.ts
++++ b/apps/readest-app/src/__tests__/services/tts-template.test.ts
+@@ -20,6 +20,7 @@ const ctx: TemplateContext = {
+   text: '他说："你好"',
+   voice: 'male-qn-qingse',
+   lang: 'zh-CN',
++  model: 'speech-02-hd',
+   rate: 1,
+   pitch: 1,
+   format: 'mp3',
+@@ -75,6 +76,10 @@ describe('renderTemplate', () => {
+     );
+   });
+ 
++  test('lets the Model field drive the body instead of a hardcoded name', () => {
++    expect(renderTemplate('{"model":{{model}}}', ctx, 'json')).toBe('{"model":"speech-02-hd"}');
++  });
++
+   test('writes numbers bare, so rate never arrives as a string', () => {
+     expect(renderTemplate('{"rate":{{rate}}}', ctx, 'json')).toBe('{"rate":1}');
+   });
+diff --git a/apps/readest-app/src/services/tts/providers/presets.ts b/apps/readest-app/src/services/tts/providers/presets.ts
+index 11fa349..173d01b 100644
+--- a/apps/readest-app/src/services/tts/providers/presets.ts
++++ b/apps/readest-app/src/services/tts/providers/presets.ts
+@@ -56,7 +56,7 @@ export const TTS_PRESETS: TTSPreset[] = [
+       url: '{{baseUrl}}/v1/t2a_v2',
+       headers: jsonHeaders,
+       bodyType: 'json',
+-      body: '{"model":"speech-02-hd","text":{{text}},"stream":false,"voice_setting":{"voice_id":{{voice}}},"audio_setting":{"format":"mp3"}}',
++      body: '{"model":{{model}},"text":{{text}},"stream":false,"voice_setting":{"voice_id":{{voice}}},"audio_setting":{"format":"mp3"}}',
+       responseType: 'json',
+       audioPath: 'data.audio',
+       audioEncoding: 'hex',
+@@ -77,7 +77,7 @@ export const TTS_PRESETS: TTSPreset[] = [
+       url: '{{baseUrl}}/v1/text-to-speech/{{voice}}',
+       headers: { 'xi-api-key': '{{apiKey}}', 'Content-Type': 'application/json' },
+       bodyType: 'json',
+-      body: '{"text":{{text}},"model_id":"eleven_multilingual_v2"}',
++      body: '{"text":{{text}},"model_id":{{model}}}',
+       responseType: 'audio',
+     },
+   },
+@@ -127,7 +127,7 @@ export const TTS_PRESETS: TTSPreset[] = [
+     voices: 'Kore, Puck, Zephyr',
+     request: {
+       method: 'POST',
+-      url: '{{baseUrl}}/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key={{apiKey}}',
++      url: '{{baseUrl}}/v1beta/models/{{model}}:generateContent?key={{apiKey}}',
+       headers: { 'Content-Type': 'application/json' },
+       bodyType: 'json',
+       body: '{"contents":[{"parts":[{"text":{{text}}}]}],"generationConfig":{"responseModalities":["AUDIO"],"speechConfig":{"voiceConfig":{"prebuiltVoiceConfig":{"voiceName":{{voice}}}}}}}',
+diff --git a/apps/readest-app/src/services/tts/providers/template.ts b/apps/readest-app/src/services/tts/providers/template.ts
+index 68f2108..dce7cd6 100644
+--- a/apps/readest-app/src/services/tts/providers/template.ts
++++ b/apps/readest-app/src/services/tts/providers/template.ts
+@@ -17,6 +17,7 @@ export interface TemplateContext {
+   text: string;
+   voice: string;
+   lang: string;
++  model: string;
+   rate: number;
+   pitch: number;
+   format: string;
+@@ -137,6 +138,7 @@ export const buildTemplateRequest = (
+     ...ctx,
+     baseUrl: service.baseUrl,
+     apiKey: service.apiKey ?? '',
++    model: service.model,
+   };
+   const url = renderTemplate(template.url, context, 'url');
+   const headers: Record<string, string> = {};
+@@ -170,9 +172,10 @@ export const synthesizeWithTemplate = async (
+     text: req.text,
+     voice: req.voice ?? '',
+     lang: req.lang ?? '',
++    model: service.model,
+     rate: 1,
+     pitch: req.pitch ?? 1,
+-    format: 'mp3',
++    format: service.responseFormat ?? 'mp3',
+     apiKey: service.apiKey ?? '',
+     baseUrl: service.baseUrl,
+   };
 -- 
 2.43.0
 

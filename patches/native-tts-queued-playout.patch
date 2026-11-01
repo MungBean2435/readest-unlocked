@@ -1,7 +1,7 @@
 From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 13:16:32 +0800
-Subject: [PATCH 1/9] feat(tts): queue native TTS sentences ahead of playback
+Subject: [PATCH 01/10] feat(tts): queue native TTS sentences ahead of playback
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -858,7 +858,7 @@ index 0000000..a95af8b
 From 5ddfd4e342af974c2935aed9a06451345fac3593 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:16:36 +0800
-Subject: [PATCH 2/9] feat(tts): queue native TTS across paragraph boundaries
+Subject: [PATCH 02/10] feat(tts): queue native TTS across paragraph boundaries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -1650,7 +1650,7 @@ index 1c7d09a..155ce77 100644
 From 13a0b6989b992e0e01d457e93b0cacbb8e508212 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:49:06 +0800
-Subject: [PATCH 3/9] chore(tts): surface the sentence cadence in the
+Subject: [PATCH 03/10] chore(tts): surface the sentence cadence in the
  notification (measurement build)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1713,7 +1713,7 @@ index daeb290..031d9a0 100644
 From 2724d2a40171e1be48748d2209f94562bca38d6c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 15:30:44 +0800
-Subject: [PATCH 4/9] feat(tts): merge consecutive sentences into one engine
+Subject: [PATCH 04/10] feat(tts): merge consecutive sentences into one engine
  utterance
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2190,7 +2190,7 @@ index 031d9a0..daeb290 100644
 From 8bf3f9c5a5b3453666b7082fc58d60c6ec8a4ab5 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 16:31:40 +0800
-Subject: [PATCH 5/9] Revert "feat(tts): merge consecutive sentences into one
+Subject: [PATCH 05/10] Revert "feat(tts): merge consecutive sentences into one
  engine utterance"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2611,7 +2611,7 @@ index 8f68cd3..c02a5a7 100644
 From c66c83ff7f7685c542d63a0856281433fc08a3c6 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:10:07 +0800
-Subject: [PATCH 6/9] feat(tts): serve Azure Speech through the custom TTS
+Subject: [PATCH 06/10] feat(tts): serve Azure Speech through the custom TTS
  service
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2899,7 +2899,7 @@ index f675318..0e4a157 100644
 From 16f2ad3c1f660d7e97b29677958aff83ad123bfa Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:36:44 +0800
-Subject: [PATCH 7/9] feat(tts): speak through a local MultiTTS forwarder
+Subject: [PATCH 07/10] feat(tts): speak through a local MultiTTS forwarder
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -3121,8 +3121,8 @@ index 0e4a157..4cdc9c2 100644
 From 4691aa67d8a637927b4a9577a84230345a25872f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:37:36 +0800
-Subject: [PATCH 8/9] test(tts): satisfy the request type in the custom-service
- tests
+Subject: [PATCH 08/10] test(tts): satisfy the request type in the
+ custom-service tests
 
 ---
  .../src/__tests__/services/custom-tts-azure.test.ts       | 8 +++++++-
@@ -3161,7 +3161,7 @@ index 0dfffa8..aa36391 100644
 From 618765e508214d0a2c2fd6f76f1fccdde9579567 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:40:39 +0800
-Subject: [PATCH 9/9] feat(tts): read the MultiTTS catalog shape
+Subject: [PATCH 09/10] feat(tts): read the MultiTTS catalog shape
 
 The forwarder answers { success, data: { count, catalog: { <engine>: [...] } } },
 one bucket per engine it hosts. Parsing only the flat shapes it also tolerates
@@ -3257,6 +3257,78 @@ index 4cdc9c2..9cffdb9 100644
      if (typeof name !== 'string' || !name) return [];
 -    const lang = entry.lang ?? entry.locale ?? entry.language;
 +    const lang = entry.locale ?? entry.lang ?? entry.language;
+     return typeof lang === 'string' && lang ? [{ name, lang }] : [{ name }];
+   });
+ };
+-- 
+2.43.0
+
+
+From ede0f067ab70453a41682c87c08f39e7cffa1a81 Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Sun, 1 Nov 2026 17:47:20 +0800
+Subject: [PATCH 10/10] fix(tts): read index signatures with brackets in the
+ forwarder parser
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The project enables noPropertyAccessFromIndexSignature, so the catalog and
+voice fields must go through ['…'] rather than dots.
+---
+ .../tts/providers/openaiCompatible.ts         | 33 ++++++++++++-------
+ 1 file changed, 21 insertions(+), 12 deletions(-)
+
+diff --git a/apps/readest-app/src/services/tts/providers/openaiCompatible.ts b/apps/readest-app/src/services/tts/providers/openaiCompatible.ts
+index 9cffdb9..db00fbb 100644
+--- a/apps/readest-app/src/services/tts/providers/openaiCompatible.ts
++++ b/apps/readest-app/src/services/tts/providers/openaiCompatible.ts
+@@ -129,27 +129,36 @@ const multiTTSEndpoint = (service: CustomTTSService, path: '/forward' | '/voices
+ 
+ // The forwarder answers `{ success, data: { count, catalog: { <engine>: [ … ] } } }`
+ // — one bucket per engine it hosts. Older/simpler shapes (a bare array, or a
+-// `voices` list) are accepted too.
++// `voices` list) are accepted too. Index signatures are read with brackets
++// because the project forbids dotted access on them.
++const asRecord = (value: unknown): Record<string, unknown> =>
++  (value ?? {}) as Record<string, unknown>;
++
+ const parseMultiTTSVoices = (body: unknown): ListedVoice[] => {
+   const pick = (value: unknown): unknown[] => {
+     if (Array.isArray(value)) return value;
+-    const record = (value ?? {}) as Record<string, unknown>;
+-    const catalog = record.catalog as Record<string, unknown> | undefined;
+-    if (catalog && typeof catalog === 'object') {
+-      return Object.values(catalog).flatMap((bucket) => (Array.isArray(bucket) ? bucket : []));
++    const record = asRecord(value);
++    const catalog = record['catalog'];
++    if (catalog && typeof catalog === 'object' && !Array.isArray(catalog)) {
++      return Object.values(catalog as Record<string, unknown>).flatMap((bucket) =>
++        Array.isArray(bucket) ? bucket : [],
++      );
++    }
++    for (const key of ['voices', 'data', 'speakers']) {
++      const list = record[key];
++      if (Array.isArray(list)) return list;
+     }
+-    return (record.voices ?? record.data ?? record.speakers ?? []) as unknown[];
++    return [];
+   };
+ 
+-  const root = (body ?? {}) as Record<string, unknown>;
+-  const raw = pick(Array.isArray(body) ? body : (root.data ?? root));
+-  if (!Array.isArray(raw)) return [];
++  const raw = pick(Array.isArray(body) ? body : (asRecord(body)['data'] ?? body));
+   return raw.flatMap((item: unknown) => {
+     if (typeof item === 'string') return [{ name: item }];
+-    const entry = (item ?? {}) as Record<string, unknown>;
+-    const name = entry.id ?? entry.code ?? entry.shortName ?? entry.name ?? entry.voice;
++    const entry = asRecord(item);
++    const name =
++      entry['id'] ?? entry['code'] ?? entry['shortName'] ?? entry['name'] ?? entry['voice'];
+     if (typeof name !== 'string' || !name) return [];
+-    const lang = entry.locale ?? entry.lang ?? entry.language;
++    const lang = entry['locale'] ?? entry['lang'] ?? entry['language'];
      return typeof lang === 'string' && lang ? [{ name, lang }] : [{ name }];
    });
  };

@@ -1,7 +1,7 @@
 From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 13:16:32 +0800
-Subject: [PATCH 01/22] feat(tts): queue native TTS sentences ahead of playback
+Subject: [PATCH 01/23] feat(tts): queue native TTS sentences ahead of playback
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -858,7 +858,7 @@ index 0000000..a95af8b
 From 5ddfd4e342af974c2935aed9a06451345fac3593 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:16:36 +0800
-Subject: [PATCH 02/22] feat(tts): queue native TTS across paragraph boundaries
+Subject: [PATCH 02/23] feat(tts): queue native TTS across paragraph boundaries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -1650,7 +1650,7 @@ index 1c7d09a..155ce77 100644
 From 13a0b6989b992e0e01d457e93b0cacbb8e508212 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:49:06 +0800
-Subject: [PATCH 03/22] chore(tts): surface the sentence cadence in the
+Subject: [PATCH 03/23] chore(tts): surface the sentence cadence in the
  notification (measurement build)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1713,7 +1713,7 @@ index daeb290..031d9a0 100644
 From 2724d2a40171e1be48748d2209f94562bca38d6c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 15:30:44 +0800
-Subject: [PATCH 04/22] feat(tts): merge consecutive sentences into one engine
+Subject: [PATCH 04/23] feat(tts): merge consecutive sentences into one engine
  utterance
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2190,7 +2190,7 @@ index 031d9a0..daeb290 100644
 From 8bf3f9c5a5b3453666b7082fc58d60c6ec8a4ab5 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 16:31:40 +0800
-Subject: [PATCH 05/22] Revert "feat(tts): merge consecutive sentences into one
+Subject: [PATCH 05/23] Revert "feat(tts): merge consecutive sentences into one
  engine utterance"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2611,7 +2611,7 @@ index 8f68cd3..c02a5a7 100644
 From c66c83ff7f7685c542d63a0856281433fc08a3c6 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:10:07 +0800
-Subject: [PATCH 06/22] feat(tts): serve Azure Speech through the custom TTS
+Subject: [PATCH 06/23] feat(tts): serve Azure Speech through the custom TTS
  service
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2899,7 +2899,7 @@ index f675318..0e4a157 100644
 From 16f2ad3c1f660d7e97b29677958aff83ad123bfa Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:36:44 +0800
-Subject: [PATCH 07/22] feat(tts): speak through a local MultiTTS forwarder
+Subject: [PATCH 07/23] feat(tts): speak through a local MultiTTS forwarder
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -3121,7 +3121,7 @@ index 0e4a157..4cdc9c2 100644
 From 4691aa67d8a637927b4a9577a84230345a25872f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:37:36 +0800
-Subject: [PATCH 08/22] test(tts): satisfy the request type in the
+Subject: [PATCH 08/23] test(tts): satisfy the request type in the
  custom-service tests
 
 ---
@@ -3161,7 +3161,7 @@ index 0dfffa8..aa36391 100644
 From 618765e508214d0a2c2fd6f76f1fccdde9579567 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:40:39 +0800
-Subject: [PATCH 09/22] feat(tts): read the MultiTTS catalog shape
+Subject: [PATCH 09/23] feat(tts): read the MultiTTS catalog shape
 
 The forwarder answers { success, data: { count, catalog: { <engine>: [...] } } },
 one bucket per engine it hosts. Parsing only the flat shapes it also tolerates
@@ -3267,7 +3267,7 @@ index 4cdc9c2..9cffdb9 100644
 From ede0f067ab70453a41682c87c08f39e7cffa1a81 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:47:20 +0800
-Subject: [PATCH 10/22] fix(tts): read index signatures with brackets in the
+Subject: [PATCH 10/23] fix(tts): read index signatures with brackets in the
  forwarder parser
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -3339,7 +3339,7 @@ index 9cffdb9..db00fbb 100644
 From 5fb3954230112cd8eaf36c3358dbd890d74a51a4 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 21:48:56 +0800
-Subject: [PATCH 11/22] feat(tts): let the reader choose the sentence and
+Subject: [PATCH 11/23] feat(tts): let the reader choose the sentence and
  paragraph pauses
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -3547,7 +3547,7 @@ index f0c8360..178a01d 100644
 From e22fbdb5dc3061cb424717206e27ec860ea47426 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:52:17 +0800
-Subject: [PATCH 12/22] feat(tts): speak to any service through an editable
+Subject: [PATCH 12/23] feat(tts): speak to any service through an editable
  request template
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4551,7 +4551,7 @@ index c4b94df..dbcf306 100644
 From b59f5ed9adf3ea4a2f9b0e333662f65cf828ce61 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:58:17 +0800
-Subject: [PATCH 13/22] fix(tts): let the Model field feed the templated
+Subject: [PATCH 13/23] fix(tts): let the Model field feed the templated
  request
 
 The MiniMax and ElevenLabs presets wrote their model name into the body, so
@@ -4656,7 +4656,7 @@ index 68f2108..dce7cd6 100644
 From 1d5f263fce4a0e9978b1bed3df0d02e56df83160 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:58:52 +0800
-Subject: [PATCH 14/22] test(tts): bracket the header lookup the project's
+Subject: [PATCH 14/23] test(tts): bracket the header lookup the project's
  strictness requires
 
 ---
@@ -4683,7 +4683,7 @@ index 96df9fe..8318336 100644
 From c94a95b9e8517d4409fbda725961f3a41fa2a2cd Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 23:24:36 +0800
-Subject: [PATCH 15/22] feat(tts): let a templated service list its own voices
+Subject: [PATCH 15/23] feat(tts): let a templated service list its own voices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -5017,7 +5017,7 @@ index dbcf306..d8a8812 100644
 From 89f0642cd493fd6c0b1f81255ba29c1e56dbfdcb Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 23:27:45 +0800
-Subject: [PATCH 16/22] feat(tts): fetch the model list too, and fix the
+Subject: [PATCH 16/23] feat(tts): fetch the model list too, and fix the
  MiniMax preset
 
 MiniMax's current model is speech-2.8-hd, not the speech-02-hd the preset
@@ -5377,7 +5377,7 @@ index d8a8812..4962e5b 100644
 From 573e21b1e212667551d703aac3352efa57debc45 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 23:33:18 +0800
-Subject: [PATCH 17/22] fix(tts): show the vendor's answer verbatim in a
+Subject: [PATCH 17/23] fix(tts): show the vendor's answer verbatim in a
  template error
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -5534,7 +5534,7 @@ index c929c3c..470b3d8 100644
 From e915028e7309c0862487e0fbe8b924b328481f55 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 23:38:37 +0800
-Subject: [PATCH 18/22] fix(tts): stop rejecting answers that actually worked
+Subject: [PATCH 18/23] fix(tts): stop rejecting answers that actually worked
 
 Two ways a working response was turned into an error:
 
@@ -5623,7 +5623,7 @@ index 470b3d8..4656f3d 100644
 From 61df7183cb62955c5bc5dda488a80cdff6b8302c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 23:54:39 +0800
-Subject: [PATCH 19/22] fix(tts): drop the error helpers the verbatim message
+Subject: [PATCH 19/23] fix(tts): drop the error helpers the verbatim message
  replaced
 
 tsc runs in CI with noUnusedLocals: the old errorDetail helper and the parsed
@@ -5690,7 +5690,7 @@ index 4656f3d..89902c0 100644
 From 1effaecb552b289c0e60282c5553ed6fc72fd273 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Mon, 2 Nov 2026 00:20:30 +0800
-Subject: [PATCH 20/22] fix(tts): keep chat models out of the speech model
+Subject: [PATCH 20/23] fix(tts): keep chat models out of the speech model
  picker
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -5840,7 +5840,7 @@ index 4962e5b..1110145 100644
 From 73faf6ad1946281e8c09a5500f94614542851456 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Mon, 2 Nov 2026 00:23:29 +0800
-Subject: [PATCH 21/22] fix(tts): keep the Model field typable
+Subject: [PATCH 21/23] fix(tts): keep the Model field typable
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -5910,7 +5910,7 @@ index 46f03ac..412bb22 100644
 From 8b7f6385abe7bfa7f7c4e918542a79e4a4175c63 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Mon, 2 Nov 2026 00:27:36 +0800
-Subject: [PATCH 22/22] fix(tts): use the voice ids MiniMax's current models
+Subject: [PATCH 22/23] fix(tts): use the voice ids MiniMax's current models
  actually accept
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -5954,6 +5954,124 @@ index 95f3738..090549d 100644
          headers: { Authorization: 'Bearer {{apiKey}}' },
          body: '{"voice_type":"system"}',
          itemsPath: 'system_voice',
+-- 
+2.43.0
+
+
+From 2402ac50786511b2567e3db7ebbb1a35d689425f Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Mon, 2 Nov 2026 00:31:22 +0800
+Subject: [PATCH 23/23] fix(tts): accept a placeholder the template already
+ quoted
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`"voice_id":"{{voice}}"` — the natural way to write JSON — used to be rendered
+by inserting a JSON string, giving either invalid JSON or a value that still
+carried the quotes. MiniMax answers the latter with status 2054 "voice id not
+exist", which is exactly what a live key reproduced; rendered through the
+engine it now sends the bare id and synthesizes.
+
+Also: /v1/models on that account returns nine chat models and no speech model
+at all, so the MiniMax preset no longer asks for a model list, and its sample
+voices are the ones the account really has.
+---
+ .../__tests__/services/tts-template.test.ts   |  7 +++++++
+ .../src/services/tts/providers/presets.ts     | 12 ++---------
+ .../src/services/tts/providers/template.ts    | 20 +++++++++++++++++--
+ 3 files changed, 27 insertions(+), 12 deletions(-)
+
+diff --git a/apps/readest-app/src/__tests__/services/tts-template.test.ts b/apps/readest-app/src/__tests__/services/tts-template.test.ts
+index f5986bd..2c5b7d4 100644
+--- a/apps/readest-app/src/__tests__/services/tts-template.test.ts
++++ b/apps/readest-app/src/__tests__/services/tts-template.test.ts
+@@ -82,6 +82,13 @@ describe('renderTemplate', () => {
+     expect(renderTemplate('{"model":{{model}}}', ctx, 'json')).toBe('{"model":"speech-02-hd"}');
+   });
+ 
++  test('accepts a placeholder that the template already quoted', () => {
++    // `"voice_id":"{{voice}}"` must not become `"voice_id":""x""`, and must not
++    // leave quotes inside the value either (MiniMax: 2054 voice id not exist).
++    const body = renderTemplate('{"voice_id":"{{voice}}"}', ctx, 'json');
++    expect(JSON.parse(body)).toEqual({ voice_id: 'male-qn-qingse' });
++  });
++
+   test('writes numbers bare, so rate never arrives as a string', () => {
+     expect(renderTemplate('{"rate":{{rate}}}', ctx, 'json')).toBe('{"rate":1}');
+   });
+diff --git a/apps/readest-app/src/services/tts/providers/presets.ts b/apps/readest-app/src/services/tts/providers/presets.ts
+index 090549d..1ce3f15 100644
+--- a/apps/readest-app/src/services/tts/providers/presets.ts
++++ b/apps/readest-app/src/services/tts/providers/presets.ts
+@@ -52,8 +52,8 @@ export const TTS_PRESETS: TTSPreset[] = [
+     model: 'speech-2.8-hd',
+     // The modern system voices. The old speech-01 ids (male-qn-qingse,
+     // female-shaonv …) are rejected by these models with "voice id not exist".
+-    voices:
+-      'Chinese (Mandarin)_Warm_Girl, Chinese (Mandarin)_News_Anchor, Chinese (Mandarin)_Gentle_Senior',
++    // Confirmed against a live key: these ids exist and synthesize with 2.8.
++    voices: 'female-shaonv, female-yujie, male-qn-qingse, male-qn-jingying',
+     request: {
+       method: 'POST',
+       url: '{{baseUrl}}/v1/t2a_v2',
+@@ -66,14 +66,6 @@ export const TTS_PRESETS: TTSPreset[] = [
+       successPath: 'base_resp.status_code',
+       successValue: '0',
+       errorPath: 'base_resp.status_msg',
+-      modelList: {
+-        // /v1/models returns chat models too; only the speech-* ones speak.
+-        url: '{{baseUrl}}/v1/models',
+-        headers: { Authorization: 'Bearer {{apiKey}}' },
+-        itemsPath: 'data',
+-        idPath: 'id',
+-        filter: '^speech',
+-      },
+       voiceList: {
+         // POST, not GET: the GET form answers 404.
+         method: 'POST',
+diff --git a/apps/readest-app/src/services/tts/providers/template.ts b/apps/readest-app/src/services/tts/providers/template.ts
+index ed05d3c..e3d6580 100644
+--- a/apps/readest-app/src/services/tts/providers/template.ts
++++ b/apps/readest-app/src/services/tts/providers/template.ts
+@@ -42,12 +42,27 @@ const placeholderValue = (ctx: TemplateContext, key: string): string | number |
+  * them, and `raw` inserts them untouched (headers, form bodies the author has
+  * already encoded).
+  */
++// A template author may write either `"voice_id":{{voice}}` or the more natural
++// `"voice_id":"{{voice}}"`. In the second form the surrounding quotes are part
++// of the template, so the value must be inserted without its own pair — else
++// the service receives a voice id that still has quotes in it, which MiniMax
++// reports as "voice id not exist" (status 2054).
++const QUOTED_PLACEHOLDER = /"\{\{\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\}\}"/g;
++
+ export const renderTemplate = (
+   template: string,
+   ctx: TemplateContext,
+   mode: 'json' | 'url' | 'raw',
+-): string =>
+-  template.replace(PLACEHOLDER, (_match, key: string) => {
++): string => {
++  let source = template;
++  if (mode === 'json') {
++    source = source.replace(QUOTED_PLACEHOLDER, (_match, key: string) => {
++      const value = placeholderValue(ctx, key);
++      if (value === undefined) return '""';
++      return JSON.stringify(String(value));
++    });
++  }
++  return source.replace(PLACEHOLDER, (_match, key: string) => {
+     const value = placeholderValue(ctx, key);
+     if (value === undefined) return '';
+     // The base URL is a URL, not a component of one: encoding it would turn
+@@ -58,6 +73,7 @@ export const renderTemplate = (
+     if (typeof value === 'number' || NUMERIC.has(key)) return String(value);
+     return JSON.stringify(String(value));
+   });
++};
+ 
+ /** Dotted path lookup with numeric segments: `choices.0.message.audio`. */
+ export const getByPath = (value: unknown, path: string): unknown => {
 -- 
 2.43.0
 

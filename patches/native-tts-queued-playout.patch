@@ -1,7 +1,7 @@
 From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 13:16:32 +0800
-Subject: [PATCH 01/10] feat(tts): queue native TTS sentences ahead of playback
+Subject: [PATCH 01/11] feat(tts): queue native TTS sentences ahead of playback
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -858,7 +858,7 @@ index 0000000..a95af8b
 From 5ddfd4e342af974c2935aed9a06451345fac3593 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:16:36 +0800
-Subject: [PATCH 02/10] feat(tts): queue native TTS across paragraph boundaries
+Subject: [PATCH 02/11] feat(tts): queue native TTS across paragraph boundaries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -1650,7 +1650,7 @@ index 1c7d09a..155ce77 100644
 From 13a0b6989b992e0e01d457e93b0cacbb8e508212 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:49:06 +0800
-Subject: [PATCH 03/10] chore(tts): surface the sentence cadence in the
+Subject: [PATCH 03/11] chore(tts): surface the sentence cadence in the
  notification (measurement build)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1713,7 +1713,7 @@ index daeb290..031d9a0 100644
 From 2724d2a40171e1be48748d2209f94562bca38d6c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 15:30:44 +0800
-Subject: [PATCH 04/10] feat(tts): merge consecutive sentences into one engine
+Subject: [PATCH 04/11] feat(tts): merge consecutive sentences into one engine
  utterance
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2190,7 +2190,7 @@ index 031d9a0..daeb290 100644
 From 8bf3f9c5a5b3453666b7082fc58d60c6ec8a4ab5 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 16:31:40 +0800
-Subject: [PATCH 05/10] Revert "feat(tts): merge consecutive sentences into one
+Subject: [PATCH 05/11] Revert "feat(tts): merge consecutive sentences into one
  engine utterance"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2611,7 +2611,7 @@ index 8f68cd3..c02a5a7 100644
 From c66c83ff7f7685c542d63a0856281433fc08a3c6 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:10:07 +0800
-Subject: [PATCH 06/10] feat(tts): serve Azure Speech through the custom TTS
+Subject: [PATCH 06/11] feat(tts): serve Azure Speech through the custom TTS
  service
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2899,7 +2899,7 @@ index f675318..0e4a157 100644
 From 16f2ad3c1f660d7e97b29677958aff83ad123bfa Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:36:44 +0800
-Subject: [PATCH 07/10] feat(tts): speak through a local MultiTTS forwarder
+Subject: [PATCH 07/11] feat(tts): speak through a local MultiTTS forwarder
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -3121,7 +3121,7 @@ index 0e4a157..4cdc9c2 100644
 From 4691aa67d8a637927b4a9577a84230345a25872f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:37:36 +0800
-Subject: [PATCH 08/10] test(tts): satisfy the request type in the
+Subject: [PATCH 08/11] test(tts): satisfy the request type in the
  custom-service tests
 
 ---
@@ -3161,7 +3161,7 @@ index 0dfffa8..aa36391 100644
 From 618765e508214d0a2c2fd6f76f1fccdde9579567 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:40:39 +0800
-Subject: [PATCH 09/10] feat(tts): read the MultiTTS catalog shape
+Subject: [PATCH 09/11] feat(tts): read the MultiTTS catalog shape
 
 The forwarder answers { success, data: { count, catalog: { <engine>: [...] } } },
 one bucket per engine it hosts. Parsing only the flat shapes it also tolerates
@@ -3267,7 +3267,7 @@ index 4cdc9c2..9cffdb9 100644
 From ede0f067ab70453a41682c87c08f39e7cffa1a81 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:47:20 +0800
-Subject: [PATCH 10/10] fix(tts): read index signatures with brackets in the
+Subject: [PATCH 10/11] fix(tts): read index signatures with brackets in the
  forwarder parser
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -3332,6 +3332,214 @@ index 9cffdb9..db00fbb 100644
      return typeof lang === 'string' && lang ? [{ name, lang }] : [{ name }];
    });
  };
+-- 
+2.43.0
+
+
+From 5fb3954230112cd8eaf36c3358dbd890d74a51a4 Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Sun, 1 Nov 2026 21:48:56 +0800
+Subject: [PATCH 11/11] feat(tts): let the reader choose the sentence and
+ paragraph pauses
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The two pauses Edge and the custom services play were constants: 0.15 s
+between sentences and 0.3 s between paragraphs, scaled for the playback rate
+and otherwise not adjustable. The rate change path also re-derived them from
+those constants, so a preference had nowhere to live.
+
+Store the user's pause at 1.0x (ttsSentenceGapBase / ttsParagraphGapBase) and
+keep the scaled pair as the value in force. The rate path now scales the
+user's base rather than resetting to the default, and the two existing
+setters are already read at schedule time, so changing a pause applies to the
+next sentence without restarting playback.
+
+Settings → TTS gains a Pauses section: five presets each, applied live to the
+running session.
+---
+ .../src/app/reader/hooks/useTTSControl.ts     | 26 +++++--
+ .../src/components/settings/TTSPanel.tsx      | 68 +++++++++++++++++++
+ apps/readest-app/src/services/constants.ts    |  2 +
+ apps/readest-app/src/types/book.ts            |  5 ++
+ 4 files changed, 97 insertions(+), 4 deletions(-)
+
+diff --git a/apps/readest-app/src/app/reader/hooks/useTTSControl.ts b/apps/readest-app/src/app/reader/hooks/useTTSControl.ts
+index e038c13..30e225c 100644
+--- a/apps/readest-app/src/app/reader/hooks/useTTSControl.ts
++++ b/apps/readest-app/src/app/reader/hooks/useTTSControl.ts
+@@ -1085,8 +1085,18 @@ export const useTTSControl = ({ bookKey, onRequestHidePanel }: UseTTSControlProp
+ 
+           ttsController.setLang(lang);
+           ttsController.setRate(viewSettings.ttsRate);
+-          ttsController.setSentenceGap(viewSettings.ttsSentenceGap ?? DEFAULT_SENTENCE_GAP_SEC);
+-          ttsController.setParagraphGap(viewSettings.ttsParagraphGap ?? DEFAULT_PARAGRAPH_GAP_SEC);
++          ttsController.setSentenceGap(
++            scaleGapForRate(
++              viewSettings.ttsSentenceGapBase ?? DEFAULT_SENTENCE_GAP_SEC,
++              viewSettings.ttsRate ?? 1,
++            ),
++          );
++          ttsController.setParagraphGap(
++            scaleGapForRate(
++              viewSettings.ttsParagraphGapBase ?? DEFAULT_PARAGRAPH_GAP_SEC,
++              viewSettings.ttsRate ?? 1,
++            ),
++          );
+           // Narrating a selection is an ordinary session started at that point,
+           // so it must not be treated as a one-shot utterance that stops the
+           // session the moment the first clip ends.
+@@ -1282,8 +1292,14 @@ export const useTTSControl = ({ bookKey, onRequestHidePanel }: UseTTSControlProp
+   // again at schedule time gave base/rate^1.6 (#5750).
+   const applyRateScaledGaps = useCallback(
+     (rate: number) => {
+-      const sentenceGap = scaleGapForRate(DEFAULT_SENTENCE_GAP_SEC, rate);
+-      const paragraphGap = scaleGapForRate(DEFAULT_PARAGRAPH_GAP_SEC, rate);
++      // The user's own pause, not the built-in default: this runs on every rate
++      // change, and reading the constant here would silently reset a preference
++      // the moment the speed slider moved.
++      const current = getViewSettings(bookKey);
++      const sentenceBase = current?.ttsSentenceGapBase ?? DEFAULT_SENTENCE_GAP_SEC;
++      const paragraphBase = current?.ttsParagraphGapBase ?? DEFAULT_PARAGRAPH_GAP_SEC;
++      const sentenceGap = scaleGapForRate(sentenceBase, rate);
++      const paragraphGap = scaleGapForRate(paragraphBase, rate);
+       // Live: both are read at schedule time, so neither needs a restart.
+       ttsControllerRef.current?.setSentenceGap(sentenceGap);
+       ttsControllerRef.current?.setParagraphGap(paragraphGap);
+@@ -1291,6 +1307,8 @@ export const useTTSControl = ({ bookKey, onRequestHidePanel }: UseTTSControlProp
+       if (viewSettings) {
+         viewSettings.ttsSentenceGap = sentenceGap;
+         viewSettings.ttsParagraphGap = paragraphGap;
++        viewSettings.ttsSentenceGapBase = sentenceBase;
++        viewSettings.ttsParagraphGapBase = paragraphBase;
+         setViewSettings(bookKey, viewSettings);
+       }
+       // Read the store fresh at call time: a `settings` captured at render goes
+diff --git a/apps/readest-app/src/components/settings/TTSPanel.tsx b/apps/readest-app/src/components/settings/TTSPanel.tsx
+index 49bab2f..71a06db 100644
+--- a/apps/readest-app/src/components/settings/TTSPanel.tsx
++++ b/apps/readest-app/src/components/settings/TTSPanel.tsx
+@@ -18,6 +18,10 @@ import {
+   TTSPlayerStyle,
+ } from '@/services/tts/types';
+ import { getTTSCacheConfig, setTTSCacheConfig } from '@/services/tts/providers/bookCacheStore';
++import { DEFAULT_SENTENCE_GAP_SEC } from '@/services/tts/BufferedTTSClient';
++import { DEFAULT_PARAGRAPH_GAP_SEC } from '@/services/tts/TTSController';
++import { scaleGapForRate } from '@/services/tts/gap';
++import { asTTSController, ttsSessionManager } from '@/services/tts/TTSSessionManager';
+ import {
+   BoxedList,
+   NavigationRow,
+@@ -131,6 +135,31 @@ const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }
+     onCancel: () => setShowCustomServices(false),
+   });
+ 
++  // The pause preferences are stored at 1.0x and scaled for the current rate
++  // (the same rule the playback path uses), so the control does not have to be
++  // re-tuned every time the speed slider moves.
++  const sentenceGapBase = viewSettings.ttsSentenceGapBase ?? DEFAULT_SENTENCE_GAP_SEC;
++  const paragraphGapBase = viewSettings.ttsParagraphGapBase ?? DEFAULT_PARAGRAPH_GAP_SEC;
++
++  const handleGapChange = (kind: 'sentence' | 'paragraph', base: number) => {
++    const rate = viewSettings.ttsRate ?? 1;
++    const scaled = scaleGapForRate(base, rate);
++    if (kind === 'sentence') {
++      void saveViewSettings(envConfig, bookKey, 'ttsSentenceGapBase', base, false, false);
++      void saveViewSettings(envConfig, bookKey, 'ttsSentenceGap', scaled, false, false);
++    } else {
++      void saveViewSettings(envConfig, bookKey, 'ttsParagraphGapBase', base, false, false);
++      void saveViewSettings(envConfig, bookKey, 'ttsParagraphGap', scaled, false, false);
++    }
++    // Live: both are read when a chunk is scheduled, so nothing has to restart.
++    const session = ttsSessionManager.getActiveSession();
++    const controller = asTTSController(session?.controller);
++    if (controller && session?.bookKey === bookKey) {
++      if (kind === 'sentence') controller.setSentenceGap(scaled);
++      else controller.setParagraphGap(scaled);
++    }
++  };
++
+   // Custom TTS services are premium: everyone else is routed to the plans page
+   // (or sign-in) instead of the sub-page.
+   const handleOpenCustomServices = () => {
+@@ -194,6 +223,45 @@ const TTSPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset }
+         />
+       </BoxedList>
+ 
++      <BoxedList title={_('Pauses')} data-setting-id='settings.tts.pauses'>
++        <SettingsRow
++          label={_('Between Sentences')}
++          description={_('Silence inserted after every sentence, at normal speed')}
++          data-setting-id='settings.tts.sentenceGap'
++        >
++          <SettingsSelect
++            value={String(sentenceGapBase)}
++            onChange={(event) => handleGapChange('sentence', Number(event.target.value))}
++            ariaLabel={_('Between Sentences')}
++            options={[
++              { value: '0.05', label: '0.05s' },
++              { value: String(DEFAULT_SENTENCE_GAP_SEC), label: '0.15s' },
++              { value: '0.25', label: '0.25s' },
++              { value: '0.4', label: '0.4s' },
++              { value: '0.6', label: '0.6s' },
++            ]}
++          />
++        </SettingsRow>
++        <SettingsRow
++          label={_('Between Paragraphs')}
++          description={_('Silence inserted between paragraphs')}
++          data-setting-id='settings.tts.paragraphGap'
++        >
++          <SettingsSelect
++            value={String(paragraphGapBase)}
++            onChange={(event) => handleGapChange('paragraph', Number(event.target.value))}
++            ariaLabel={_('Between Paragraphs')}
++            options={[
++              { value: '0.1', label: '0.1s' },
++              { value: String(DEFAULT_PARAGRAPH_GAP_SEC), label: '0.3s' },
++              { value: '0.5', label: '0.5s' },
++              { value: '0.8', label: '0.8s' },
++              { value: '1.2', label: '1.2s' },
++            ]}
++          />
++        </SettingsRow>
++      </BoxedList>
++
+       <TTSHighlightStyleEditor
+         granularity={ttsHighlightGranularity}
+         style={ttsHighlightStyle}
+diff --git a/apps/readest-app/src/services/constants.ts b/apps/readest-app/src/services/constants.ts
+index 258e527..a3e763c 100644
+--- a/apps/readest-app/src/services/constants.ts
++++ b/apps/readest-app/src/services/constants.ts
+@@ -527,6 +527,8 @@ export const DEFAULT_TTS_CONFIG: TTSConfig = {
+   ttsRate: 1.3,
+   ttsSentenceGap: DEFAULT_SENTENCE_GAP_SEC,
+   ttsParagraphGap: DEFAULT_PARAGRAPH_GAP_SEC,
++  ttsSentenceGapBase: DEFAULT_SENTENCE_GAP_SEC,
++  ttsParagraphGapBase: DEFAULT_PARAGRAPH_GAP_SEC,
+   ttsVoice: '',
+   ttsUseNarration: true,
+   ttsLocation: '',
+diff --git a/apps/readest-app/src/types/book.ts b/apps/readest-app/src/types/book.ts
+index f0c8360..178a01d 100644
+--- a/apps/readest-app/src/types/book.ts
++++ b/apps/readest-app/src/types/book.ts
+@@ -427,8 +427,13 @@ export interface ViewConfig {
+ 
+ export interface TTSConfig {
+   ttsRate: number;
++  // The pause in force right now: the base below scaled for `ttsRate`.
+   ttsSentenceGap: number;
+   ttsParagraphGap: number;
++  // The user's own pause at 1.0x. The scaled values above are derived from
++  // these on every rate change, so a preference survives speeding up.
++  ttsSentenceGapBase: number;
++  ttsParagraphGapBase: number;
+   ttsVoice: string;
+   // Prefer the book's own recorded narration (EPUB 3 Media Overlays) over
+   // synthesized speech. Defaults on, so a read-along book is read by its
 -- 
 2.43.0
 

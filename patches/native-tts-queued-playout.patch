@@ -1,7 +1,7 @@
 From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 13:16:32 +0800
-Subject: [PATCH 1/4] feat(tts): queue native TTS sentences ahead of playback
+Subject: [PATCH 1/5] feat(tts): queue native TTS sentences ahead of playback
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -858,7 +858,7 @@ index 0000000..a95af8b
 From 5ddfd4e342af974c2935aed9a06451345fac3593 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:16:36 +0800
-Subject: [PATCH 2/4] feat(tts): queue native TTS across paragraph boundaries
+Subject: [PATCH 2/5] feat(tts): queue native TTS across paragraph boundaries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -1650,7 +1650,7 @@ index 1c7d09a..155ce77 100644
 From 13a0b6989b992e0e01d457e93b0cacbb8e508212 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:49:06 +0800
-Subject: [PATCH 3/4] chore(tts): surface the sentence cadence in the
+Subject: [PATCH 3/5] chore(tts): surface the sentence cadence in the
  notification (measurement build)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1713,7 +1713,7 @@ index daeb290..031d9a0 100644
 From 2724d2a40171e1be48748d2209f94562bca38d6c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 15:30:44 +0800
-Subject: [PATCH 4/4] feat(tts): merge consecutive sentences into one engine
+Subject: [PATCH 4/5] feat(tts): merge consecutive sentences into one engine
  utterance
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2183,6 +2183,427 @@ index 031d9a0..daeb290 100644
          artist: metadata.artist,
          album: metadata.album,
        };
+-- 
+2.43.0
+
+
+From 8bf3f9c5a5b3453666b7082fc58d60c6ec8a4ab5 Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Sun, 1 Nov 2026 16:31:40 +0800
+Subject: [PATCH 5/5] Revert "feat(tts): merge consecutive sentences into one
+ engine utterance"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Merging regressed playback: at a paragraph change the previous paragraph
+could be read again. Until the cause is understood, back to one sentence per
+engine call — the version that only had the gap complaint.
+---
+ .../services/native-tts-queue.test.ts         |  59 -----
+ .../src/services/tts/NativeTTSClient.ts       | 201 +++---------------
+ 2 files changed, 34 insertions(+), 226 deletions(-)
+
+diff --git a/apps/readest-app/src/__tests__/services/native-tts-queue.test.ts b/apps/readest-app/src/__tests__/services/native-tts-queue.test.ts
+index 2709722..fbb86e7 100644
+--- a/apps/readest-app/src/__tests__/services/native-tts-queue.test.ts
++++ b/apps/readest-app/src/__tests__/services/native-tts-queue.test.ts
+@@ -207,65 +207,6 @@ describe('NativeTTSClient queued playout', () => {
+     expect(second.events.filter((event) => event.code === 'end')).toHaveLength(2);
+   });
+ 
+-  test('merges sentences into one utterance once the engine reports ranges', async () => {
+-    const { client } = await createClient();
+-    const first = startSpeaking(client);
+-    await tick();
+-    expect(speakPayloads).toHaveLength(4);
+-
+-    // The engine reports word ranges: sentence-level highlight survives merging.
+-    fire('u1', 'boundary', 'start');
+-    fire('u1', 'boundary', 'pos:0-4');
+-    await tick();
+-
+-    await preload(client);
+-    expect(speakPayloads).toHaveLength(5);
+-    expect(speakPayloads[4]!.mode).toBe('queue');
+-    expect(speakPayloads[4]!.text.replace(/\s+/g, ' ')).toContain(
+-      'Next paragraph one. Next paragraph two.',
+-    );
+-
+-    first.controller.abort();
+-    await first.done;
+-  });
+-
+-  test('advances the highlight through a merged utterance by range offset', async () => {
+-    const { client, controller } = await createClient();
+-    const first = startSpeaking(client);
+-    await tick();
+-
+-    // Prove range support, then let the next block be merged.
+-    fire('u1', 'boundary', 'start');
+-    fire('u1', 'boundary', 'pos:0-4');
+-    await tick();
+-    await preload(client);
+-    for (let index = 1; index <= 4; index++) await finish(`u${index}`);
+-    await first.done;
+-
+-    const second = startSpeaking(client, SSML_B);
+-    await tick();
+-    expect(speakPayloads).toHaveLength(5);
+-
+-    fire('u5', 'boundary', 'start');
+-    expect(controller.dispatchSpeakMark).toHaveBeenLastCalledWith(
+-      expect.objectContaining({ name: 'b1' }),
+-    );
+-
+-    // Where the second sentence starts inside the merged utterance.
+-    const merged = speakPayloads[4]!.text;
+-    const offset = merged.indexOf('Next paragraph two');
+-    fire('u5', 'boundary', `pos:${offset}-${offset + 4}`);
+-    expect(controller.dispatchSpeakMark).toHaveBeenLastCalledWith(
+-      expect.objectContaining({ name: 'b2' }),
+-    );
+-
+-    await finish('u5');
+-    await second.done;
+-    expect(second.events.some((event) => event.code === 'boundary' && event.mark === 'b2')).toBe(
+-      true,
+-    );
+-  });
+-
+   test('handing over to the next paragraph does not stop the engine', async () => {
+     const { client } = await createClient();
+     startSpeaking(client);
+diff --git a/apps/readest-app/src/services/tts/NativeTTSClient.ts b/apps/readest-app/src/services/tts/NativeTTSClient.ts
+index 8f68cd3..c02a5a7 100644
+--- a/apps/readest-app/src/services/tts/NativeTTSClient.ts
++++ b/apps/readest-app/src/services/tts/NativeTTSClient.ts
+@@ -42,52 +42,20 @@ const TTSEngines = {
+ // batch, and the next paragraph's opening is appended while the current one is
+ // still being spoken. Everything the JS side used to do between two sentences
+ // (invoke round trip, engine start, event hop) then hides inside the previous
+-// sentence instead of becoming silence.
+-//
+-// What queueing cannot remove is the engine's own pause around each utterance:
+-// it closes and reopens its audio track per call. Merging consecutive sentences
+-// into one utterance removes those boundaries instead of hiding them — the
+-// engine then reads straight through, which is how the buffered engines sound.
+-// It is only safe where the engine reports word ranges (see #markIndexAt), so
+-// it switches on after the first range event and back off if a merged utterance
+-// never produces one.
++// sentence instead of becoming silence — and the same holds across a paragraph
++// boundary, which used to cost a stop, a flush and an engine restart.
+ const STOP_TIMEOUT_MS = 1500;
+-const MAX_MERGE_MARKS = 3;
+-const MAX_MERGE_CHARS = 160;
+ 
+ const isSameMark = (a: TTSMark, b: TTSMark): boolean =>
+   a.name === b.name && a.text.replace(/\s+/g, ' ').trim() === b.text.replace(/\s+/g, ' ').trim();
+ 
+-const isSameGroup = (a: TTSMark[], b: TTSMark[]): boolean =>
+-  a.length === b.length && a.every((mark, index) => isSameMark(mark, b[index]!));
+-
+-// A sentence boundary inside one utterance needs a separator only between
+-// scripts that space their words; CJK runs on.
+-const CJK = /[\u2e80-\u9fff\uf900-\ufaff\uff00-\uffef\u3000-\u303f]/;
+-const joinSentence = (left: string, right: string): string => {
+-  // The marks carry their own surrounding whitespace; never add a second space.
+-  if (/\s$/.test(left) || /^\s/.test(right)) return '';
+-  if (CJK.test(left.slice(-1)) || CJK.test(right.slice(0, 1))) return '';
+-  return ' ';
+-};
+-
+-interface UtteranceText {
+-  text: string;
+-  // Where each sentence starts, in characters, inside `text`.
+-  offsets: number[];
+-}
+-
+ interface QueuedUtterance {
+-  // One or more sentences read as a single engine call, in order.
+-  marks: TTSMark[];
+-  offsets: number[];
++  mark: TTSMark;
+   id: string;
+   events: TTSMessageEvent[];
+   submittedAt: number;
+   started: boolean;
+   finished: boolean;
+-  markIndex: number;
+-  sawRange: boolean;
+ }
+ 
+ export class NativeTTSClient implements TTSClient {
+@@ -106,7 +74,7 @@ export class NativeTTSClient implements TTSClient {
+   // Handed to the engine, in playback order, not yet consumed by a speaker.
+   #queue: QueuedUtterance[] = [];
+   // The same entries by id, so the event listener can route a native event to
+-  // the sentences it belongs to.
++  // the sentence it belongs to.
+   #utterances = new Map<string, QueuedUtterance>();
+   #wake: (() => void) | null = null;
+   // Bumped by every hard stop: an enqueue or a preload that was waiting on the
+@@ -119,13 +87,6 @@ export class NativeTTSClient implements TTSClient {
+   // Serializes submissions: the flush/queue decision depends on the queue being
+   // empty, and two concurrent submits could both see it empty.
+   #submitting: Promise<unknown> = Promise.resolve();
+-  // Whether the engine reports word ranges, i.e. whether sentences can be
+-  // merged without losing the per-sentence highlight.
+-  #mergeEnabled = false;
+-  // Grouping is computed once per block: a preload and the speak that later
+-  // consumes it must agree on how the sentences were grouped, or the queue
+-  // would look discontinuous and be thrown away.
+-  #groupCache = new Map<string, TTSMark[][]>();
+ 
+   constructor(controller?: TTSController) {
+     this.controller = controller;
+@@ -143,49 +104,20 @@ export class NativeTTSClient implements TTSClient {
+           const utterance = this.#utterances.get(utteranceId);
+           if (!utterance) return;
+ 
+-          if (code === 'boundary') {
+-            const range = /^pos:(\d+)-/.exec(message ?? '');
+-            if (range) {
+-              // A word range inside the utterance: the engine can tell us where
+-              // it is, so merged sentences keep their highlight — and the next
+-              // block may be merged too.
+-              utterance.sawRange = true;
+-              this.#mergeEnabled = true;
+-              const index = this.#markIndexAt(utterance, Number(range[1]));
+-              if (index > utterance.markIndex) {
+-                utterance.markIndex = index;
+-                const nextMark = utterance.marks[index]!;
+-                this.controller?.dispatchSpeakMark(nextMark);
+-                utterance.events.push({ code: 'boundary', message: 'mark', mark: nextMark.name });
+-                this.#notify();
+-              }
+-              return;
+-            }
+-
+-            if (!utterance.started) {
+-              // The utterance became audible: highlight its first sentence now,
+-              // not when it was queued (the queue runs ahead of the voice).
+-              utterance.started = true;
+-              noteSentenceStarted(utterance.submittedAt, Date.now());
+-              this.controller?.dispatchSpeakMark(utterance.marks[0]!);
+-            }
+-            utterance.events.push({ code, message, mark });
+-            this.#notify();
+-            return;
+-          }
+-
+-          if (code === 'end' || code === 'error') {
++          // The sentence became audible: highlight it now, not when it was
++          // queued (the queue runs sentences ahead of the voice).
++          // Any boundary counts: some engines report only range events.
++          if (code === 'boundary' && !utterance.started) {
++            utterance.started = true;
++            noteSentenceStarted(utterance.submittedAt, Date.now());
++            this.controller?.dispatchSpeakMark(utterance.mark);
++          } else if (code === 'end' || code === 'error') {
+             utterance.finished = true;
+             noteSentenceEnded();
+-            if (code === 'end' && utterance.marks.length > 1 && !utterance.sawRange) {
+-              // A merged utterance came back without a single range: this
+-              // engine cannot be merged without losing the highlight.
+-              this.#mergeEnabled = false;
+-            }
+-            utterance.events.push({ code, message, mark });
+-            this.#notify();
+-            return;
+           }
++
++          utterance.events.push({ code, message, mark });
++          this.#notify();
+         },
+       );
+     } catch (error) {
+@@ -208,96 +140,33 @@ export class NativeTTSClient implements TTSClient {
+     return this.initialized;
+   }
+ 
+-  #markIndexAt(utterance: QueuedUtterance, offset: number): number {
+-    let index = 0;
+-    for (let i = 0; i < utterance.offsets.length; i++) {
+-      if (utterance.offsets[i]! <= offset) index = i;
+-    }
+-    return index;
+-  }
+-
+-  // One block's sentences, grouped into engine calls. Sentence-per-call while
+-  // stepping or looping (those need a boundary per sentence), and until the
+-  // engine has demonstrated range reporting.
+-  #groupsFor(marks: TTSMark[]): TTSMark[][] {
+-    if (marks.length === 0) return [];
+-    const key = `${marks[0]!.name}|${marks.length}|${marks[marks.length - 1]!.name}`;
+-    const cached = this.#groupCache.get(key);
+-    if (cached) return cached;
+-
+-    const controller = this.controller;
+-    const single =
+-      !this.#mergeEnabled ||
+-      !controller ||
+-      controller.pauseAfterSentence ||
+-      controller.loopState !== 'off';
+-
+-    const groups: TTSMark[][] = [];
+-    if (single) {
+-      for (const mark of marks) groups.push([mark]);
+-    } else {
+-      let index = 0;
+-      while (index < marks.length) {
+-        const group = [marks[index]!];
+-        let chars = marks[index]!.text.length;
+-        while (group.length < MAX_MERGE_MARKS && index + group.length < marks.length) {
+-          const next = marks[index + group.length]!;
+-          if (chars + next.text.length > MAX_MERGE_CHARS) break;
+-          group.push(next);
+-          chars += next.text.length;
+-        }
+-        groups.push(group);
+-        index += group.length;
+-      }
+-    }
+-
+-    if (this.#groupCache.size > 16) this.#groupCache.clear();
+-    this.#groupCache.set(key, groups);
+-    return groups;
+-  }
+-
+-  #utteranceText(marks: TTSMark[]): UtteranceText {
+-    let text = '';
+-    const offsets: number[] = [];
+-    for (const mark of marks) {
+-      if (text.length > 0) text += joinSentence(text, mark.text);
+-      offsets.push(text.length);
+-      text += mark.text;
+-    }
+-    return { text, offsets };
+-  }
+-
+-  // Hand one engine call to the queue. `flush` only when nothing is queued:
+-  // while audio is still in the engine, appending is what keeps sentences — and
+-  // paragraphs — gapless. `flush` still matters for the first call of a run,
+-  // where it drops anything stale a seek or a lost stop left behind.
+-  #enqueue(marks: TTSMark[]): Promise<QueuedUtterance> {
++  // Hand one sentence to the engine. `flush` only when nothing is queued: while
++  // audio is still in the engine, appending is what keeps sentences — and
++  // paragraphs — gapless. `flush` still matters for the first sentence of a
++  // run, where it drops anything stale a seek or a lost stop left behind.
++  #enqueue(mark: TTSMark): Promise<QueuedUtterance> {
+     const run = async (): Promise<QueuedUtterance> => {
+-      const { text, offsets } = this.#utteranceText(marks);
+-      const voiceId = await this.getVoiceIdFromLang(marks[0]!.language);
++      const voiceId = await this.getVoiceIdFromLang(mark.language);
+       // Setting the voice costs a native round trip and an engine call: skip it
+       // while the voice is unchanged, which is every sentence but a switch.
+       if (voiceId && voiceId !== this.#currentVoiceId) {
+         await this.setVoice(voiceId);
+       }
+-      this.#speakingLang = marks[0]!.language;
++      this.#speakingLang = mark.language;
+ 
+       const mode = this.#queue.length === 0 ? 'flush' : 'queue';
+       const submittedAt = Date.now();
+       const { utteranceId } = await invoke<{ utteranceId: string }>('plugin:native-tts|speak', {
+-        payload: { text, preload: false, mode },
++        payload: { text: mark.text, preload: false, mode },
+       });
+ 
+       const utterance: QueuedUtterance = {
+-        marks,
+-        offsets,
++        mark,
+         id: utteranceId,
+         events: [],
+         submittedAt,
+         started: false,
+         finished: false,
+-        markIndex: 0,
+-        sawRange: false,
+       };
+       this.#queue.push(utterance);
+       this.#utterances.set(utteranceId, utterance);
+@@ -312,19 +181,18 @@ export class NativeTTSClient implements TTSClient {
+     return next;
+   }
+ 
+-  // Make sure the block's utterances are the ones at the front of the queue, in
++  // Make sure the block's sentences are the ones at the front of the queue, in
+   // order. A preloaded block is already there and costs nothing; anything else
+   // means the audio ahead of it no longer belongs to what is being read (a
+   // seek, a skip, a voice change) and is dropped.
+   async #ensureQueued(marks: TTSMark[], signal: AbortSignal): Promise<void> {
+     if (this.#stale) await this.#hardStop();
+-    const groups = this.#groupsFor(marks);
+     let epoch = this.#epoch;
+-    for (let index = 0; index < groups.length; index++) {
++    for (let index = 0; index < marks.length; index++) {
+       // A stop from outside (pause, seek, shutdown) ends this block.
+       if (signal.aborted || epoch !== this.#epoch) return;
+       const queued = this.#queue[index];
+-      if (queued && isSameGroup(queued.marks, groups[index]!)) continue;
++      if (queued && isSameMark(queued.mark, marks[index]!)) continue;
+       if (queued) {
+         await this.#hardStop();
+         // Our own stop bumped the epoch; keep going from the clean queue.
+@@ -332,7 +200,7 @@ export class NativeTTSClient implements TTSClient {
+         index = -1;
+         continue;
+       }
+-      await this.#enqueue(groups[index]!);
++      await this.#enqueue(marks[index]!);
+     }
+   }
+ 
+@@ -365,7 +233,6 @@ export class NativeTTSClient implements TTSClient {
+       return;
+     }
+     const epoch = this.#epoch;
+-    const groups = this.#groupsFor(marks);
+ 
+     const superseded = () => signal.aborted || epoch !== this.#epoch;
+     // An abort has to wake the wait below: no native event is coming.
+@@ -373,15 +240,14 @@ export class NativeTTSClient implements TTSClient {
+     signal.addEventListener('abort', onAbort, { once: true });
+ 
+     try {
+-      for (let groupIndex = 0; groupIndex < groups.length; groupIndex++) {
++      for (const mark of marks) {
+         const head = this.#queue[0];
+         if (!head) return;
+ 
+         for (;;) {
+           const event = head.events.shift();
+           if (event) {
+-            const mark = event.mark ?? head.marks[head.markIndex]?.name ?? head.marks[0]!.name;
+-            yield { ...event, mark } as TTSMessageEvent;
++            yield { ...event, mark: head.mark.name } as TTSMessageEvent;
+             if (event.code === 'end' || event.code === 'error') break;
+             continue;
+           }
+@@ -406,6 +272,7 @@ export class NativeTTSClient implements TTSClient {
+ 
+         if (this.#queue[0] === head) this.#queue.shift();
+         this.#utterances.delete(head.id);
++        void mark;
+       }
+     } finally {
+       signal.removeEventListener('abort', onAbort);
+@@ -428,10 +295,10 @@ export class NativeTTSClient implements TTSClient {
+       controller.loopState === 'off';
+ 
+     if (appendable) {
+-      for (const group of this.#groupsFor(marks)) {
++      for (const mark of marks) {
+         if (signal.aborted) break;
+-        if (this.#queue.some((queued) => isSameGroup(queued.marks, group))) continue;
+-        await this.#enqueue(group);
++        if (this.#queue.some((queued) => isSameMark(queued.mark, mark))) continue;
++        await this.#enqueue(mark);
+       }
+     }
+ 
 -- 
 2.43.0
 

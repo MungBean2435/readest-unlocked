@@ -1,7 +1,7 @@
 From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 13:16:32 +0800
-Subject: [PATCH 01/16] feat(tts): queue native TTS sentences ahead of playback
+Subject: [PATCH 01/17] feat(tts): queue native TTS sentences ahead of playback
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -858,7 +858,7 @@ index 0000000..a95af8b
 From 5ddfd4e342af974c2935aed9a06451345fac3593 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:16:36 +0800
-Subject: [PATCH 02/16] feat(tts): queue native TTS across paragraph boundaries
+Subject: [PATCH 02/17] feat(tts): queue native TTS across paragraph boundaries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -1650,7 +1650,7 @@ index 1c7d09a..155ce77 100644
 From 13a0b6989b992e0e01d457e93b0cacbb8e508212 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:49:06 +0800
-Subject: [PATCH 03/16] chore(tts): surface the sentence cadence in the
+Subject: [PATCH 03/17] chore(tts): surface the sentence cadence in the
  notification (measurement build)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1713,7 +1713,7 @@ index daeb290..031d9a0 100644
 From 2724d2a40171e1be48748d2209f94562bca38d6c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 15:30:44 +0800
-Subject: [PATCH 04/16] feat(tts): merge consecutive sentences into one engine
+Subject: [PATCH 04/17] feat(tts): merge consecutive sentences into one engine
  utterance
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2190,7 +2190,7 @@ index 031d9a0..daeb290 100644
 From 8bf3f9c5a5b3453666b7082fc58d60c6ec8a4ab5 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 16:31:40 +0800
-Subject: [PATCH 05/16] Revert "feat(tts): merge consecutive sentences into one
+Subject: [PATCH 05/17] Revert "feat(tts): merge consecutive sentences into one
  engine utterance"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2611,7 +2611,7 @@ index 8f68cd3..c02a5a7 100644
 From c66c83ff7f7685c542d63a0856281433fc08a3c6 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:10:07 +0800
-Subject: [PATCH 06/16] feat(tts): serve Azure Speech through the custom TTS
+Subject: [PATCH 06/17] feat(tts): serve Azure Speech through the custom TTS
  service
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2899,7 +2899,7 @@ index f675318..0e4a157 100644
 From 16f2ad3c1f660d7e97b29677958aff83ad123bfa Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:36:44 +0800
-Subject: [PATCH 07/16] feat(tts): speak through a local MultiTTS forwarder
+Subject: [PATCH 07/17] feat(tts): speak through a local MultiTTS forwarder
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -3121,7 +3121,7 @@ index 0e4a157..4cdc9c2 100644
 From 4691aa67d8a637927b4a9577a84230345a25872f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:37:36 +0800
-Subject: [PATCH 08/16] test(tts): satisfy the request type in the
+Subject: [PATCH 08/17] test(tts): satisfy the request type in the
  custom-service tests
 
 ---
@@ -3161,7 +3161,7 @@ index 0dfffa8..aa36391 100644
 From 618765e508214d0a2c2fd6f76f1fccdde9579567 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:40:39 +0800
-Subject: [PATCH 09/16] feat(tts): read the MultiTTS catalog shape
+Subject: [PATCH 09/17] feat(tts): read the MultiTTS catalog shape
 
 The forwarder answers { success, data: { count, catalog: { <engine>: [...] } } },
 one bucket per engine it hosts. Parsing only the flat shapes it also tolerates
@@ -3267,7 +3267,7 @@ index 4cdc9c2..9cffdb9 100644
 From ede0f067ab70453a41682c87c08f39e7cffa1a81 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:47:20 +0800
-Subject: [PATCH 10/16] fix(tts): read index signatures with brackets in the
+Subject: [PATCH 10/17] fix(tts): read index signatures with brackets in the
  forwarder parser
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -3339,7 +3339,7 @@ index 9cffdb9..db00fbb 100644
 From 5fb3954230112cd8eaf36c3358dbd890d74a51a4 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 21:48:56 +0800
-Subject: [PATCH 11/16] feat(tts): let the reader choose the sentence and
+Subject: [PATCH 11/17] feat(tts): let the reader choose the sentence and
  paragraph pauses
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -3547,7 +3547,7 @@ index f0c8360..178a01d 100644
 From e22fbdb5dc3061cb424717206e27ec860ea47426 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:52:17 +0800
-Subject: [PATCH 12/16] feat(tts): speak to any service through an editable
+Subject: [PATCH 12/17] feat(tts): speak to any service through an editable
  request template
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -4551,7 +4551,7 @@ index c4b94df..dbcf306 100644
 From b59f5ed9adf3ea4a2f9b0e333662f65cf828ce61 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:58:17 +0800
-Subject: [PATCH 13/16] fix(tts): let the Model field feed the templated
+Subject: [PATCH 13/17] fix(tts): let the Model field feed the templated
  request
 
 The MiniMax and ElevenLabs presets wrote their model name into the body, so
@@ -4656,7 +4656,7 @@ index 68f2108..dce7cd6 100644
 From 1d5f263fce4a0e9978b1bed3df0d02e56df83160 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 22:58:52 +0800
-Subject: [PATCH 14/16] test(tts): bracket the header lookup the project's
+Subject: [PATCH 14/17] test(tts): bracket the header lookup the project's
  strictness requires
 
 ---
@@ -4683,7 +4683,7 @@ index 96df9fe..8318336 100644
 From c94a95b9e8517d4409fbda725961f3a41fa2a2cd Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 23:24:36 +0800
-Subject: [PATCH 15/16] feat(tts): let a templated service list its own voices
+Subject: [PATCH 15/17] feat(tts): let a templated service list its own voices
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -5017,7 +5017,7 @@ index dbcf306..d8a8812 100644
 From 89f0642cd493fd6c0b1f81255ba29c1e56dbfdcb Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 23:27:45 +0800
-Subject: [PATCH 16/16] feat(tts): fetch the model list too, and fix the
+Subject: [PATCH 16/17] feat(tts): fetch the model list too, and fix the
  MiniMax preset
 
 MiniMax's current model is speech-2.8-hd, not the speech-02-hd the preset
@@ -5370,6 +5370,163 @@ index d8a8812..4962e5b 100644
    itemsPath?: string;
    /** Path inside one item to its id (required) and its name/locale. */
    idPath: string;
+-- 
+2.43.0
+
+
+From 573e21b1e212667551d703aac3352efa57debc45 Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Sun, 1 Nov 2026 23:33:18 +0800
+Subject: [PATCH 17/17] fix(tts): show the vendor's answer verbatim in a
+ template error
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+"MiniMax (t2a_v2): voice id not exist" is the vendor's status_msg, but without
+the status, the URL actually called and the raw body it cannot be told apart
+from a wrong model, a quota or a key that only works elsewhere — and the one
+line the editor appended pointed at the OpenAI route, which is not where the
+request went.
+
+A template error now reads: the service, HTTP status, the method and rendered
+URL, then the response body as it arrived (whitespace collapsed, 400 chars).
+---
+ .../__tests__/services/tts-template.test.ts   | 20 +++++++++++
+ .../settings/CustomTTSServiceEditor.tsx       |  8 ++---
+ .../src/services/tts/providers/template.ts    | 35 ++++++++++++++-----
+ 3 files changed, 50 insertions(+), 13 deletions(-)
+
+diff --git a/apps/readest-app/src/__tests__/services/tts-template.test.ts b/apps/readest-app/src/__tests__/services/tts-template.test.ts
+index 1f7043f..5986317 100644
+--- a/apps/readest-app/src/__tests__/services/tts-template.test.ts
++++ b/apps/readest-app/src/__tests__/services/tts-template.test.ts
+@@ -140,6 +140,26 @@ describe('synthesizeWithTemplate', () => {
+     expect(String((error as Error).message)).toContain('login fail');
+   });
+ 
++  test('the error carries the status, the URL and the vendor answer', async () => {
++    fetchMock.mockResolvedValue({
++      ok: true,
++      status: 200,
++      text: async () =>
++        JSON.stringify({ base_resp: { status_code: 1004, status_msg: 'voice id not exist' } }),
++      json: async () => ({}),
++      arrayBuffer: async () => new ArrayBuffer(0),
++    });
++    const error = await synthesizeWithTemplate(
++      minimax(),
++      request,
++      new AbortController().signal,
++    ).catch((e: unknown) => e);
++    const text = String((error as Error).message);
++    expect(text).toContain('voice id not exist');
++    expect(text).toContain('https://api.minimaxi.com/v1/t2a_v2');
++    expect(text).toContain('HTTP 200');
++  });
++
+   test('missing audio at the configured path names the path', async () => {
+     fetchMock.mockResolvedValue(jsonResponse({ base_resp: { status_code: 0 }, data: {} }));
+     const error = await synthesizeWithTemplate(
+diff --git a/apps/readest-app/src/components/settings/CustomTTSServiceEditor.tsx b/apps/readest-app/src/components/settings/CustomTTSServiceEditor.tsx
+index 32d590c..e07adfe 100644
+--- a/apps/readest-app/src/components/settings/CustomTTSServiceEditor.tsx
++++ b/apps/readest-app/src/components/settings/CustomTTSServiceEditor.tsx
+@@ -184,11 +184,9 @@ const CustomTTSServiceEditor: React.FC<CustomTTSServiceEditorProps> = ({ service
+       // The URL it tried, so a wrong base URL is easy to spot: a templated
+       // service must show its own endpoint, not the OpenAI one.
+       const message = err instanceof Error ? err.message : String(err);
+-      const tried =
+-        test.kind === 'template' && test.request
+-          ? test.request.url.replace(/\{\{\s*baseUrl\s*\}\}/g, test.baseUrl)
+-          : speechEndpoint(test);
+-      setError(`${message}\n${tried}`);
++      // A template error already carries the method, the URL and the raw
++      // answer; only the built-in protocols need the endpoint appended.
++      setError(test.kind === 'template' ? message : `${message}\n${speechEndpoint(test)}`);
+     } finally {
+       setTesting(false);
+     }
+diff --git a/apps/readest-app/src/services/tts/providers/template.ts b/apps/readest-app/src/services/tts/providers/template.ts
+index c929c3c..470b3d8 100644
+--- a/apps/readest-app/src/services/tts/providers/template.ts
++++ b/apps/readest-app/src/services/tts/providers/template.ts
+@@ -111,15 +111,32 @@ const errorDetail = (body: unknown, template: TTSRequestTemplate, raw: string):
+   return raw.slice(0, 300);
+ };
+ 
++// The raw answer is part of the error: a paraphrased message ("voice id not
++// exist") cannot tell a wrong voice from a wrong model, a quota or a key that
++// only works on some endpoints, and the user is the one who can read the
++// vendor's own words.
++const describe = (
++  service: CustomTTSService,
++  template: TTSRequestTemplate,
++  url: string,
++  status: number,
++  raw: string,
++): string => {
++  const body = raw.replace(/\s+/g, ' ').trim().slice(0, 400);
++  return [`${service.name}: HTTP ${status}`, `${template.method} ${url}`, body]
++    .filter(Boolean)
++    .join('\n');
++};
++
+ const throwStatusError = (
+   service: CustomTTSService,
+   status: number,
+   raw: string,
+   parsed: unknown,
+   template: TTSRequestTemplate,
++  url: string,
+ ): never => {
+-  const detail = errorDetail(parsed ?? raw, template, raw);
+-  const message = `${service.name}: HTTP ${status}${detail ? ` ${detail}` : ''}`;
++  const message = describe(service, template, url, status, raw);
+   if (status === 401 || status === 403) throw new SpeechSynthesisFatalError(message);
+   if (status < 500 && status !== 429) throw new SpeechSynthesisPermanentError(message);
+   throw new Error(message);
+@@ -265,7 +282,7 @@ export const synthesizeWithTemplate = async (
+   if (template.responseType === 'audio') {
+     if (!res.ok) {
+       const raw = await res.text().catch(() => '');
+-      throwStatusError(service, res.status, raw, undefined, template);
++      throwStatusError(service, res.status, raw, undefined, template, url);
+     }
+     return await res.arrayBuffer();
+   }
+@@ -278,7 +295,7 @@ export const synthesizeWithTemplate = async (
+     } catch {
+       // Not JSON: the text is the detail.
+     }
+-    throwStatusError(service, res.status, raw, parsed, template);
++    throwStatusError(service, res.status, raw, parsed, template, url);
+   }
+ 
+   let json: unknown;
+@@ -295,16 +312,18 @@ export const synthesizeWithTemplate = async (
+     const actual = String(getByPath(json, template.successPath) ?? '');
+     const wanted = template.successValue ?? '';
+     if (actual !== wanted) {
+-      throw new SpeechSynthesisPermanentError(
+-        `${service.name}: ${errorDetail(json, template, raw)}`,
+-      );
++      throw new SpeechSynthesisPermanentError(describe(service, template, url, res.status, raw));
+     }
+   }
+ 
+   const audioValue = getByPath(json, template.audioPath ?? '');
+   if (typeof audioValue !== 'string' || !audioValue) {
+     throw new SpeechSynthesisPermanentError(
+-      `${service.name}: no audio at ${template.audioPath || '(unset audioPath)'}`,
++      [
++        `${service.name}: no audio at ${template.audioPath || '(unset audioPath)'}`,
++        `${template.method} ${url}`,
++        raw.replace(/\s+/g, ' ').trim().slice(0, 400),
++      ].join('\n'),
+     );
+   }
+   return bytesOf(audioValue, template.audioEncoding);
 -- 
 2.43.0
 

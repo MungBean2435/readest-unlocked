@@ -134,16 +134,17 @@ jobs:
       - name: Generate a throwaway signing key
         run: |
           set -euo pipefail
+          keystore="$RUNNER_TEMP/dev-keystore.jks"
           keytool -genkeypair -noprompt \
-            -keystore "$RUNNER_TEMP/dev-keystore.jks" \
+            -keystore "$keystore" \
             -alias readestdev -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass readestdev -keypass readestdev \
             -dname "CN=Readest Dev Build, O=Local, C=US"
-          {
-            echo "ANDROID_KEY_ALIAS=readestdev"
-            echo "ANDROID_KEY_PASSWORD=readestdev"
-            echo "ANDROID_KEY_BASE64=$(base64 -w0 "$RUNNER_TEMP/dev-keystore.jks")"
-          } >> "$GITHUB_ENV"
+          # Exported here, not through $GITHUB_ENV: those land in later steps
+          # only, and the helper below runs in this one.
+          export ANDROID_KEY_ALIAS=readestdev
+          export ANDROID_KEY_PASSWORD=readestdev
+          export ANDROID_KEY_BASE64="$(base64 -w0 "$keystore")"
           bash .recipe/helpers/android-keystore.sh
 
       - name: Build the APK

@@ -1,7 +1,7 @@
 From 5e5ca41661d9f5353291123227ae1bf0dea9139f Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 13:16:32 +0800
-Subject: [PATCH 1/6] feat(tts): queue native TTS sentences ahead of playback
+Subject: [PATCH 1/7] feat(tts): queue native TTS sentences ahead of playback
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -858,7 +858,7 @@ index 0000000..a95af8b
 From 5ddfd4e342af974c2935aed9a06451345fac3593 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:16:36 +0800
-Subject: [PATCH 2/6] feat(tts): queue native TTS across paragraph boundaries
+Subject: [PATCH 2/7] feat(tts): queue native TTS across paragraph boundaries
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -1650,7 +1650,7 @@ index 1c7d09a..155ce77 100644
 From 13a0b6989b992e0e01d457e93b0cacbb8e508212 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 14:49:06 +0800
-Subject: [PATCH 3/6] chore(tts): surface the sentence cadence in the
+Subject: [PATCH 3/7] chore(tts): surface the sentence cadence in the
  notification (measurement build)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -1713,7 +1713,7 @@ index daeb290..031d9a0 100644
 From 2724d2a40171e1be48748d2209f94562bca38d6c Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 15:30:44 +0800
-Subject: [PATCH 4/6] feat(tts): merge consecutive sentences into one engine
+Subject: [PATCH 4/7] feat(tts): merge consecutive sentences into one engine
  utterance
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2190,7 +2190,7 @@ index 031d9a0..daeb290 100644
 From 8bf3f9c5a5b3453666b7082fc58d60c6ec8a4ab5 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 16:31:40 +0800
-Subject: [PATCH 5/6] Revert "feat(tts): merge consecutive sentences into one
+Subject: [PATCH 5/7] Revert "feat(tts): merge consecutive sentences into one
  engine utterance"
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2611,7 +2611,7 @@ index 8f68cd3..c02a5a7 100644
 From c66c83ff7f7685c542d63a0856281433fc08a3c6 Mon Sep 17 00:00:00 2001
 From: DSH <dsh@local>
 Date: Sun, 1 Nov 2026 17:10:07 +0800
-Subject: [PATCH 6/6] feat(tts): serve Azure Speech through the custom TTS
+Subject: [PATCH 6/7] feat(tts): serve Azure Speech through the custom TTS
  service
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -2892,6 +2892,228 @@ index f675318..0e4a157 100644
        const body = isMiMo
          ? {
              model: service.model,
+-- 
+2.43.0
+
+
+From 16f2ad3c1f660d7e97b29677958aff83ad123bfa Mon Sep 17 00:00:00 2001
+From: DSH <dsh@local>
+Date: Sun, 1 Nov 2026 17:36:44 +0800
+Subject: [PATCH 7/7] feat(tts): speak through a local MultiTTS forwarder
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MultiTTS exposes its engines over a tiny local HTTP API — GET /forward with
+the text and its dials, GET /voices for the list — which is the one place the
+Microsoft Translator voices (XiaochenMultilingual, XiaoxiaoMultilingual, …)
+can be reached, online or offline, without the Edge endpoint that does not
+serve them.
+
+Recognise a loopback base URL (port 8774, or a URL that names /forward) in the
+custom service and speak that protocol. Speed stays at the forwarder's middle
+setting: the playback rate is applied by our own player, which keeps cached
+audio rate-independent, and pitch maps onto its 0–100 dial.
+
+Like Azure, these voices then run through the buffered pipeline — prefetch,
+gapless playout, cache — so the user's own engines sound like the built-in one.
+---
+ .../services/custom-tts-azure.test.ts         | 62 +++++++++++++
+ .../tts/providers/openaiCompatible.ts         | 87 +++++++++++++++++++
+ 2 files changed, 149 insertions(+)
+
+diff --git a/apps/readest-app/src/__tests__/services/custom-tts-azure.test.ts b/apps/readest-app/src/__tests__/services/custom-tts-azure.test.ts
+index 458917b..0dfffa8 100644
+--- a/apps/readest-app/src/__tests__/services/custom-tts-azure.test.ts
++++ b/apps/readest-app/src/__tests__/services/custom-tts-azure.test.ts
+@@ -5,6 +5,7 @@ vi.mock('@/services/ai/utils/httpFetch', () => ({ getAIFetch: () => fetchMock })
+ 
+ import {
+   isAzureSpeech,
++  isMultiTTS,
+   OpenAICompatibleSpeechProvider,
+ } from '@/services/tts/providers/openaiCompatible';
+ import {
+@@ -46,6 +47,67 @@ beforeEach(() => {
+   fetchMock.mockReset();
+ });
+ 
++describe('MultiTTS local forwarder', () => {
++  test('recognises the loopback forwarder and leaves other hosts alone', () => {
++    expect(isMultiTTS(service({ baseUrl: 'http://localhost:8774' }))).toBe(true);
++    expect(isMultiTTS(service({ baseUrl: 'http://127.0.0.1:8774/forward' }))).toBe(true);
++    expect(isMultiTTS(service({ baseUrl: 'http://localhost:8880' }))).toBe(false);
++    expect(isMultiTTS(service({ baseUrl: 'https://api.openai.com/v1' }))).toBe(false);
++  });
++
++  test('asks the forwarder for one sentence with its dials', async () => {
++    fetchMock.mockResolvedValue(response());
++    const provider = buildProvider(
++      service({
++        baseUrl: 'http://localhost:8774',
++        apiKey: undefined,
++        voices: undefined,
++      }),
++    );
++
++    await provider.synthesize(
++      { lang: 'zh-CN', text: '你好，世界', voice: 'az:zh-CN-XiaochenMultilingualNeural', pitch: 1 },
++      new AbortController().signal,
++    );
++
++    const [url, init] = fetchMock.mock.calls[0]!;
++    expect(url).toContain('http://localhost:8774/forward?');
++    expect(url).toContain(`text=${encodeURIComponent('你好，世界').replace(/%20/g, '+')}`);
++    expect(url).toContain('speed=50');
++    expect(url).toContain('volume=100');
++    expect(url).toContain('pitch=50');
++    expect(url).toContain('voice=zh-CN-XiaochenMultilingualNeural');
++    expect(init.method).toBeUndefined();
++  });
++
++  test('lists the forwarder voices, whatever shape they come in', async () => {
++    const provider = buildProvider(
++      service({
++        baseUrl: 'http://localhost:8774/forward',
++        apiKey: undefined,
++        voices: undefined,
++      }),
++    );
++
++    fetchMock.mockResolvedValue(
++      response({
++        body: [
++          { id: 'zh-CN-XiaochenMultilingualNeural', name: '晓辰', locale: 'zh-CN' },
++          { code: 'zh-CN-YunxiNeural', name: '云希' },
++        ],
++      }),
++    );
++
++    const voices = await provider.getAllVoices();
++    expect(fetchMock.mock.calls[0]![0]).toBe('http://localhost:8774/voices');
++    expect(voices.map((voice) => voice.id)).toEqual([
++      'az:zh-CN-XiaochenMultilingualNeural',
++      'az:zh-CN-YunxiNeural',
++    ]);
++    expect(voices[1]!.lang).toBe('mul');
++  });
++});
++
+ describe('Azure Speech through the custom TTS service', () => {
+   test('recognises Azure hosts and leaves OpenAI endpoints alone', () => {
+     expect(isAzureSpeech(service())).toBe(true);
+diff --git a/apps/readest-app/src/services/tts/providers/openaiCompatible.ts b/apps/readest-app/src/services/tts/providers/openaiCompatible.ts
+index 0e4a157..4cdc9c2 100644
+--- a/apps/readest-app/src/services/tts/providers/openaiCompatible.ts
++++ b/apps/readest-app/src/services/tts/providers/openaiCompatible.ts
+@@ -103,6 +103,63 @@ const azureSSML = (lang: string, text: string, voice: string): string =>
+   `xml:lang="${escapeXml(lang)}"><voice name="${escapeXml(voice)}">` +
+   `${escapeXml(text)}</voice></speak>`;
+ 
++// MultiTTS (an Android TTS host) can expose its engines over a tiny local HTTP
++// forwarder: GET /forward?text=&speed=&volume=&pitch=&voice= returns the audio,
++// GET /voices lists the voices. That is the one place a user's own online *and*
++// offline engines — including the Microsoft Translator voices Edge does not
++// serve — can be reached from here, and going through this provider means they
++// play through the buffered pipeline like any other engine.
++const LOOPBACK = /^(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)$/i;
++
++export const isMultiTTS = (service: Pick<CustomTTSService, 'baseUrl'>): boolean => {
++  try {
++    const url = new URL(service.baseUrl);
++    if (/\/forward\/?$/.test(url.pathname)) return true;
++    return LOOPBACK.test(url.hostname) && url.port === '8774';
++  } catch {
++    return false;
++  }
++};
++
++// A base URL may name the forwarder itself (`…:8774/forward`) or just the host.
++const multiTTSEndpoint = (service: CustomTTSService, path: '/forward' | '/voices'): string => {
++  const base = service.baseUrl.replace(/\/+$/, '');
++  return /\/forward$/.test(base) ? base.replace(/\/forward$/, path) : `${base}${path}`;
++};
++
++// The forwarder lists whatever shape its engine produces; take the usual keys.
++const parseMultiTTSVoices = (body: unknown): ListedVoice[] => {
++  const raw = Array.isArray(body)
++    ? body
++    : ((body as { voices?: unknown; data?: unknown; speakers?: unknown } | null)?.voices ??
++      (body as { data?: unknown } | null)?.data ??
++      (body as { speakers?: unknown } | null)?.speakers ??
++      []);
++  if (!Array.isArray(raw)) return [];
++  return raw.flatMap((item: unknown) => {
++    if (typeof item === 'string') return [{ name: item }];
++    const entry = (item ?? {}) as Record<string, unknown>;
++    const name = entry.id ?? entry.code ?? entry.shortName ?? entry.name ?? entry.voice;
++    if (typeof name !== 'string' || !name) return [];
++    const lang = entry.lang ?? entry.locale ?? entry.language;
++    return typeof lang === 'string' && lang ? [{ name, lang }] : [{ name }];
++  });
++};
++
++// The forwarder's dials are 0–100 with 50 as the middle. Speed stays at the
++// middle because the playback rate is applied later by the player, which keeps
++// the cached audio rate-independent.
++const multiTTSParams = (text: string, voice: string, pitch: number): URLSearchParams => {
++  const params = new URLSearchParams({
++    text,
++    speed: '50',
++    volume: '100',
++    pitch: String(Math.max(0, Math.min(100, Math.round(pitch * 50)))),
++    voice,
++  });
++  return params;
++};
++
+ const azureHeaders = (service: CustomTTSService): Record<string, string> => ({
+   'Ocp-Apim-Subscription-Key': service.apiKey ?? '',
+   'Content-Type': 'application/ssml+xml',
+@@ -164,6 +221,17 @@ const fetchServiceVoices = async (service: CustomTTSService): Promise<ListedVoic
+   const typed = service.voices?.split(',').flatMap((name) => name.trim() || []);
+   if (typed?.length) return typed.map((name) => ({ name }));
+   if (isMiMoService(service)) return MIMO_VOICES;
++  if (isMultiTTS(service)) {
++    try {
++      const res = await getAIFetch()(multiTTSEndpoint(service, '/voices'), {});
++      if (res.ok) {
++        const voices = parseMultiTTSVoices(await res.json());
++        if (voices.length) return voices;
++      }
++    } catch {
++      // Fall through to the names typed into the service.
++    }
++  }
+   if (isAzureSpeech(service)) {
+     try {
+       const res = await getAIFetch()(azureVoiceListEndpoint(service), {
+@@ -310,6 +378,25 @@ export class OpenAICompatibleSpeechProvider implements SpeechProvider {
+     const onAbort = () => controller.abort();
+     signal.addEventListener('abort', onAbort, { once: true });
+     try {
++      if (isMultiTTS(service)) {
++        const url = `${multiTTSEndpoint(service, '/forward')}?${multiTTSParams(
++          req.text,
++          voice,
++          req.pitch,
++        ).toString()}`;
++        const res = await getAIFetch()(url, { signal: controller.signal });
++        if (!res.ok) {
++          const detail = (await res.text().catch(() => '')).slice(0, 300);
++          const message = `${service.name}: HTTP ${res.status}${detail ? ` ${detail}` : ''}`;
++          if (res.status === 401 || res.status === 403)
++            throw new SpeechSynthesisFatalError(message);
++          if (res.status < 500 && !TRANSIENT_STATUSES.has(res.status)) {
++            throw new SpeechSynthesisPermanentError(message);
++          }
++          throw new Error(message);
++        }
++        return { audio: unwrapNestedWav(await res.arrayBuffer()), boundaries: [] };
++      }
+       if (isAzureSpeech(service)) {
+         const res = await getAIFetch()(azureSpeechEndpoint(service), {
+           method: 'POST',
 -- 
 2.43.0
 

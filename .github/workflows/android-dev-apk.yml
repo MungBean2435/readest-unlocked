@@ -15,7 +15,7 @@ name: Build Android APK (dev)
 
 on:
   push:
-    branches: ['topic/**']
+    branches: ['apk/**']
   workflow_dispatch:
     inputs:
       ref:

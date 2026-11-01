@@ -1,8 +1,8 @@
 > **这个 fork 是做什么的**
 >
-> 在 [hirofumo/readest-unlocked](https://github.com/hirofumo/readest-unlocked) 的构建配方之上，专门打磨**朗读（TTS）**：让 Android 系统 TTS 与自建 TTS 服务也能像内置 Edge 朗读那样几乎无停顿，并支持接入微软多语言音色、MiMo、以及本地 MultiTTS 引擎。
+> 在 [hirofumo/readest-unlocked](https://github.com/hirofumo/readest-unlocked) 的构建配方之上，专门打磨**朗读（TTS）**：让 Android 系统 TTS 与自建 TTS 服务也能像内置 Edge 朗读那样几乎无停顿，并支持接入本地 MultiTTS 引擎。
 >
-> - **下载 APK**：[Releases](https://github.com/MungBean2435/readest-unlocked/releases) · 最新 `apk-v6`（Android arm64，约 56 MB）
+> - **下载 APK**：[Releases](https://github.com/MungBean2435/readest-unlocked/releases) · 最新 `apk-v6`（Android arm64，约 54 MB）
 > - **TTS 补丁**：[`patches/native-tts-queued-playout.patch`](https://github.com/MungBean2435/readest-unlocked/blob/apk/dev/patches/native-tts-queued-playout.patch)
 > - **构建工作流**：[`.github/workflows/android-dev-apk.yml`](https://github.com/MungBean2435/readest-unlocked/blob/apk/dev/.github/workflows/android-dev-apk.yml)（只出 Android arm64，不需要任何 secret）
 > - **改动基线**：`readest@314a62d`（补丁按此 commit 生成，换 ref 会导致 `git apply` 失败）
@@ -14,8 +14,7 @@
 | **句级排队播放** | 系统 TTS 原来「提交一句 → 等播完 → 再提交下一句」，每句都要付一次引擎启动 + IPC 的代价。改成一整段提前入队，边播边补 |
 | **跨段落连续** | 换段原来是「停引擎 → sleep 0.3s → flush → 冷启动」。改成换段不停引擎，下一段的句子接在队列后面 |
 | **`queuedBlocks` 能力位** | 告诉控制器块与块之间已经连续，不要再自己 sleep |
-| **Azure Speech** | 通过「自定义 TTS 服务」接 Azure：`https://<区域>.tts.speech.microsoft.com/cognitiveservices` + key，可用 Edge 没有的多语言音色（XiaoxiaoMultilingual、XiaochenMultilingual…） |
-| **MultiTTS 转发器** | `http://localhost:8774` 即可用 MultiTTS 里那 163 个音色（含离线和在线引擎），同样走缓冲流水线 |
+| **MultiTTS 转发器** | `http://localhost:8774` 即可用 MultiTTS 里那 163 个音色（含离线和在线引擎），走缓冲流水线，句间停顿和 Edge 一致 |
 | **朗读延迟埋点** | `globalThis.ttsLatencyReport()` 输出句间间隔的 P50/P95，用于对比改动前后 |
 
 这些改动全部在 `apps/readest-app/src/services/tts/` 下，不碰解锁逻辑；解锁仍然来自上游配方。
@@ -25,6 +24,23 @@
 系统 TTS 的接口是「播放型」的：`speak(text)` 一调用就出声，拿不到音频字节。于是每句都要经历 `提交 → 引擎启动 → 开音频轨道 → 朗读 → 关轨道 → 事件回传`，这些步骤不能重叠，句间空隙由引擎决定（100–400ms），改不了。
 
 Edge 与自定义服务走的是另一条路：接口返回**音频字节**，播放由应用自己的 `BufferedTTSClient` 负责——解码、裁静音、变速、排进共享 `AudioContext` 的时间轴。句子边界只是一个时间戳，句间停顿（0.15s）和段间停顿（0.3s）由我们决定，而且可以在播第 1 句时把第 4 句都合成好。
+
+## 后续计划
+
+### 1. 系统 TTS 继续对齐 Edge
+
+现在系统 TTS 已经做到「句与句、段与段之间不再有 JS 侧开销」，但**引擎自己每调用一次关/开音频轨道的那段空隙还在**（100–400ms，随引擎不同）。目标是把它也消掉，两条路：
+
+- **合并朗读**：2–3 句合成一次调用，把边界数量降到 1/3。上一版做过，但因为句子中途用 `dispatchSpeakMark` 挪动了朗读游标，导致换段时重播上一段，已回退；重启这条路要先解决游标问题（只在句首派发，或用字符比例估算推进高亮）。
+- **`synthesizeToFile`**：把系统 TTS 合成到音频文件，再交给 Edge 同款的缓冲播放器。播放层完全复用，句间停顿变成我们自己排的 0.15s，这是「完全相同效果」的正解，工作量约 1–2 周。
+
+### 2. Edge 的停顿改成可配置
+
+目前 Edge 的句间 0.15s、段间 0.3s 是写死的常量（`DEFAULT_SENTENCE_GAP_SEC` / `DEFAULT_PARAGRAPH_GAP_SEC`，问号感叹号还会 ×2）。计划：
+
+- 在朗读设置里加「句间停顿」「段间停顿」两个滑杆（0–1s），实时生效
+- 停顿按语速缩放（现在是 `rate^0.6`），并允许关掉这个缩放
+- 自定义服务与系统 TTS 共用同一组设置
 
 ## 自己构建
 
@@ -45,13 +61,13 @@ git push origin apk/dev
 - **一次性签名**：与官方版、与上游 unlocked 版签名都不同，**必须先卸载旧版**才能安装；装上也收不到自动更新
 - **只有 arm64-v8a**：x86 模拟器装不了
 - **MultiTTS 需常驻后台**：转发器是那个 App 提供的本地 HTTP 服务，被系统回收后合成会失败
-- **缓存占用**：MultiTTS 返回未压缩 WAV（每句 40–90 KB），长时间听书缓存会明显变大；Azure 与 Edge 返回 MP3，体积约 1/8
+- **缓存占用**：MultiTTS 返回未压缩 WAV（每句 40–90 KB），长时间听书缓存会明显变大
 
 ## 版本记录
 
 | 版本 | 内容 |
 | --- | --- |
-| `apk-v6` | MultiTTS 转发器 + Azure 语音；朗读回到稳定行为 |
+| `apk-v6` | MultiTTS 转发器；朗读回到稳定行为 |
 | `apk-v5` | 回退「多句合并」（存在换段重播问题） |
 | `apk-v4` | 多句合并（有 bug，仅存档） |
 | `apk-v2` | 跨段落连续播放 |
